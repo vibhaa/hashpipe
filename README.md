@@ -1,2 +1,2 @@
 # tutorials
-Holds different P4 language tutorials
+P4 language tutorials
