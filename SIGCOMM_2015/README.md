@@ -1,3 +1,24 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [P4 SIGCOMM 2015 Tutorial](#p4-sigcomm-2015-tutorial)
+  - [Introduction](#introduction)
+  - [Obtaining required software](#obtaining-required-software)
+  - [Before starting the exercises](#before-starting-the-exercises)
+  - [Exercise 1: Source Routing](#exercise-1-source-routing)
+    - [Description of the EasyRoute protocol](#description-of-the-easyroute-protocol)
+    - [A few hints](#a-few-hints)
+    - [Populating the tables](#populating-the-tables)
+    - [Testing your code](#testing-your-code)
+    - [Debugging your code](#debugging-your-code)
+  - [Exercise 2: Implementing TCP flowlet switching](#exercise-2-implementing-tcp-flowlet-switching)
+    - [What is flowlet switching?](#what-is-flowlet-switching)
+    - [Running the starter code](#running-the-starter-code)
+    - [What you need to do](#what-you-need-to-do)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # P4 SIGCOMM 2015 Tutorial
 
 The original webpage for the tutorial can be found 
