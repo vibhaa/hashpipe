@@ -35,7 +35,7 @@ target [on p4lang]
 *Source Routing* asks you to write a P4 program from scratch to implement a
 custom source routing protocol. *Flowlet Switching* is more difficult: you will
 start from a simple P4 routing program (with ECMP) and implement a version of
-flowlet switching, which yields better load balancing for long-lived TCP flows.
+flowlet switching, which yields better load balancing for bursty TCP flows.
 
 For both exercises, you will find a .tar.gz archive which contains the solution
 files.
@@ -212,7 +212,8 @@ being processed correctly.
 
 ## Exercise 2: Implementing TCP flowlet switching
 
-Place yourself in the `source_routing` directory.
+Place yourself in the `flowlet_switching` directory and run
+`sudo ./veth_setup.sh`.
 
 ### What is flowlet switching?
 
