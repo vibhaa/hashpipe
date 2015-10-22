@@ -1,0 +1,10 @@
+# Python byte code
+*.pyc
+
+# Emacs
+*~
+
+# Compiled JSON
+*.json
+
+*.pcap
