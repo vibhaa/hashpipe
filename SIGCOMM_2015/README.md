@@ -70,6 +70,12 @@ build the code once all the dependencies have been installed:
 - `./configure`
 - `make`
 
+You will also need to install `mininet`, as well as the following Python
+packages: `scapy`, `thrift` (>= 0.9.2) and `networkx`. On Ubuntu, it would look
+like this:
+- `sudo apt-get install mininet`
+- `sudo pip install scapy thrift networkx`
+
 ## Before starting the exercises
 
 You need to tell us where you cloned the `bmv2` and `p4c-bm` repositories
