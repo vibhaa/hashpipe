@@ -10,6 +10,8 @@ included:
   packet, encapsulate it and send it to a special port.
 - `meter`: how to use indirect meters in P4.
 - `TLV_parsing`: how to parse IPv4 options
+- `register`: how to use registers in P4 and read / write the state from the
+  control plane
 
 All examples are orgranized the same way, with a `p4src` directory containing
 the P4 source code, and a `README` file describing the P4 program and explaining
