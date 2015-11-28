@@ -1,5 +1,7 @@
+import java.util.*;
+
 public class LossyFlowIdentifier{
-	public static ReverseLookUpTables
+	public static PriorityQueue<LossyFlow> HeapOfLossyFlows; 
 	private class BucketMatrixIndex{
 		int hashfunctionIndex;
 		int bucketIndex;
@@ -7,6 +9,16 @@ public class LossyFlowIdentifier{
 		public BucketMatrixIndex(int i, int j){
 			hashfunctionIndex = i;
 			bucketIndex = j;
+		}
+	}
+
+	public class LossyFlow{
+		long flowid;
+		int losscount;
+
+		LossyFlow(long flowid, losscount){
+			this.flowid = flowid;
+			this.losscount = losscount;
 		}
 	}
 
@@ -40,22 +52,23 @@ public class LossyFlowIdentifier{
 
 		// read the flow to be lost from the command line and create a new stream with that flow lost
 		long flowToBeLost = Integer.parseInt(args[2]);
-		ArrayList<Packet> lossyPacketStream = LossInducer.createSingleLossyFlow(originalPacketStream, flowToBeLost);
+		ArrayList<Packet> finalPacketStream = LossInducer.createSingleLossyFlow(originalPacketStream, flowToBeLost);
 
 		// collect stream data at the start point of the link
-		FlowHashTable startSketch = new FlowHashTable(K, H, N);
-		for (Packet p : originalStream){
-			startSketch.updateCount(p);
+		ArrayList<Packet> lostPacketStream = computeDiff(originalPacketStream, finalPacketStream);
+		FlowHashTable lostPacketSketch = new FlowHashTable(K, H, N);
+		for (Packet p : lostPacketStream){
+			lostPacketSketch.updateCount(p);
 		}
 
-		// collect stream data at the end point of the link
+		/* collect stream data at the end point of the link
 		FlowHashTable endSketch = new FlowHashTable(K, H, N);
 		for (Packet p : lossyPacketStream){
 			endSketch.updateCount(p);
 		}
 
 		// subtract the two sketches and store the result in the startSketch
-		startSketch.subtract(endSketch);
+		startSketch.subtract(endSketch);*/
 
 		// identify all the heavy buckets that contributed to the loss
 		ArrayList<BucketMatrixIndex> lossyBuckets = identifyLossyBuckets(startSketch, threshold);
