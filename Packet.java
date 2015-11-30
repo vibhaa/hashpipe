@@ -1,30 +1,30 @@
 import java.util.*;
 
 public class Packet{
-	private String srcip;
-	private String dstip;
+	private long srcip;
+	private long dstip;
 	private String srcPort;
 	private String dstPort;
 	private String protocol;
 
-	public Packet(String srcip, String dstip, String srcPort, String dstPort, String protocol){
-		this.srcip = new String(srcip);
-		this.dstip = new String(dstip);
+	public Packet(long srcip, long dstip, String srcPort, String dstPort, String protocol){
+		this.srcip = srcip;
+		this.dstip = dstip;
 		this.srcPort = new String(srcPort);
 		this.dstPort = new String(dstPort);
 		this.protocol = new String(protocol);
 	}
 
-	public String getSrcIp(){
+	public long getSrcIp(){
 		return srcip;
 	}
 
-	public String getDstIp(){
+	public long getDstIp(){
 		return dstip;
 	}
 
 	public String fivetuple(){
-		return srcip + dstip + srcPort + dstPort + protocol;
+		return Long.toString(srcip); /* + long.toString(dstip) + srcPort + dstPort + protocol;*/
 	}
 
 	public static ArrayList<Packet> computeDiff(HashSet<Packet> startPointPackets, HashSet<Packet> endPointPackets){

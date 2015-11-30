@@ -14,8 +14,9 @@ public class LossInducer{
 	// flow recognized by the srcip
 	public static HashSet<Packet> createSingleLossyFlow(HashSet<Packet> packetStream, String flowToBeLost){
 		HashSet<Packet> lossyStream = new HashSet<Packet>();
+		long ipToBeLost = FlowDataParser.convertAddressToLong(flowToBeLost);
 		for (Packet p : packetStream){
-			if (!p.getSrcIp().equals(flowToBeLost))
+			if (p.getSrcIp() == ipToBeLost)
 				lossyStream.add(p);
 		}
 
