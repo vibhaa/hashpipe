@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class AssymetricHashTableSimulation{
+public class SmartEvictionHashTableSimulation{
 	public static void main(String[] args){
 		int numberOfTrials = Integer.parseInt(args[0]);
 		int numberOfFlows = Integer.parseInt(args[1]);
@@ -12,10 +12,14 @@ public class AssymetricHashTableSimulation{
 		int totalNumberOfPackets = 0;
 		int D = 2;
 
-		// hardcoded values for the hash functions given that the number of flows is 100
+		// hardcoded values for the hash functions given that the number of flows doesn't exceed 850
 		final int P = 1019;
 		final int hashA[] = {421, 149};
 		final int hashB[] = {73, 109};
+
+		/*final int numberOfFlows[] = {200, 300, 400, 500, 600, 700, 800, 850};
+		final int tableSize[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500};
+		final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};*/
 
 		// create a set of lost packets which consists of i lost packets of flow i
 		ArrayList<Integer> packets = new ArrayList<Integer>();
@@ -32,7 +36,7 @@ public class AssymetricHashTableSimulation{
 				expectedLossyFlows.add(i);
 			}
 		}
-		//System.out.println("expected lossy flow size" + expectedLossyFlows.size());
+		System.out.println("expected lossy flow size" + expectedLossyFlows.size());
 
 		// array that counts the number of ith packets lost across the trials
 		int packetsInfoDroppedAtFlow[] = new int[numberOfFlows];

@@ -9,6 +9,9 @@ public class EvictingHashTableSimulation{
 		int lostPacketCount = 0;
 		int D = 2;
 
+		/*Sketch that maintains the loss of each flow*/
+		Sketch countMinSketch = new Sketch(100, 3, numberOfFlows);
+
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 1019;
 		final int hashA[] = {421, 149};
@@ -34,11 +37,19 @@ public class EvictingHashTableSimulation{
 		for (int i = 0; i < numberOfTrials; i++){
 			Collections.shuffle(packets);
 			//lostFlowCount = 0;
+
+			// reset counters
+			countMinSketch.reset();
+			// each packets comes in as a lost packet, put it in the count min sketch and also the hash table
 			for (int j = 0; j < packets.size(); j++){
+				// update the count-min sketch for this flowid
+				countMinSketch.updateCount(packets.get(j));
+
 				/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
+				int index = 0;
 				int k = 0;
 				for (k = 0; k < D; k++){
-					int index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
+					index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
 					//int index = (int) ((packets.get(j)%(tableSize/D)) *(tableSize/D) + k*tableSize/D);
 					// this flow has been seen before
 					if (buckets[index].flowid == packets.get(j)) {
@@ -61,8 +72,15 @@ public class EvictingHashTableSimulation{
 				// find a way of tracking the information of the incoming flow because it isnt the hash table
 				// so we don't have information on what its loss count is nd the very first time it comes in, loss is 0
 				if (k == D) {
-					flowsLostAtIndex[packets.get(j) - 1]++;
-					lostPacketCount++;
+					if (countMinSketch.estimateLossCount(buckets[index].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
+						flowsLostAtIndex[packets.get(j) - 1] = 0;
+						flowsLostAtIndex[buckets[index].flowid] = buckets[index].count;
+						lostPacketCount = lostPacketCount + buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+					}
+					else{
+						flowsLostAtIndex[packets.get(j) - 1]++;
+						lostPacketCount++;
+					}
 				}						
 			}
 
@@ -74,7 +92,7 @@ public class EvictingHashTableSimulation{
 					nonzero++;
 				}			
 			}
-			System.out.println("non-zero buckets " + nonzero + " lost flows " + lostPacketCount);
+			//System.out.println("non-zero buckets " + nonzero + " lost flows " + lostPacketCount);
 			//System.out.println(lostPacketCount);
 		}
 
@@ -84,5 +102,16 @@ public class EvictingHashTableSimulation{
 			System.out.println(observedProbFlowLostAtIndex[i]);
 		}*/
 		System.out.println(lostPacketCount/(double) numberOfTrials);
+
+		for (int i = 1; i <= numberOfFlows; i++){
+			System.out.println(countMinSketch.estimateLossCount(i));
+		}
+
+		/*long[][] matrix = countMinSketch.getMatrix();
+		for (int i = 0; i < matrix.length; i++){
+			for (int j = 0; j < countMinSketch.getSize(); j++)
+				System.out.print(matrix[i][j] + " ");
+			System.out.println();
+		}*/
 	}
 }

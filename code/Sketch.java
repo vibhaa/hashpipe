@@ -14,7 +14,7 @@ public class Sketch{
 	// a and b to compute the hashFunctions needed, every ith index in the hashSeedA and hashSeedB arrays are
 	//used to form a linear combination to get a hashfunction of the form ((ax + b) %p) %size
 	private final long[] hashSeedA;
-	private final long[] hashSeedB;
+	private long[] hashSeedB;
 	private final long p;
 
 	public Sketch(int size, int numberOfHashFunctions, int totalNumberOfKeys){
@@ -25,21 +25,25 @@ public class Sketch{
 		hashMatrix = new long[numberOfHashFunctions][size];
 		this.totalNumberOfPackets = 0;
 
+		this.p = 1019L;
+
 		// a and b to compute the hashFunctions needed, every ith index in the hashSeedA and hashSeedB arrays are
 		//used to form a linear combination to get a hashfunction of the form ((ax + b) %p) %size
-		hashSeedA = { 59032440799460394L,\
-		      1380096083914250750L,\
-		      9216393848249138261L,\
-		      1829347879307711444L,\
+		long[] hashSeedA = { 421, 149, 151, 59032440799460394L,
+		      1380096083914250750L,
+		      9216393848249138261L,
+		      1829347879307711444L,
 		      9218705108064111365L};
-		
-		hashSeedB = { 832108633134565846L,\
-		      9207888196126356626L,\
-		      1106582827276932161L,\
-		      7850759173320174309L,\
-		      8297516128533878091L};
 
-		p = 31;
+		this.hashSeedA = hashSeedA;
+		
+		long[] hashSeedB = {73L, 109L, 87L,
+			  832108633134565846L,
+		      9207888196126356626L,
+		      1106582827276932161L,
+		      7850759173320174309L,
+		      8297516128533878091L};
+		this.hashSeedB = hashSeedB;
 	}
 
 	public int getSize(){
@@ -66,8 +70,7 @@ public class Sketch{
 
 	// update the sketch to reflect that a packet with the id has been received
 	// asume updateCount is called on a packet only once
-	public void updateCount(Packet p){
-		long flowid = p.getSrcIp();
+	public void updateCount(int flowid){
 		//String flowid = p.fivetuple();
 
 		/* mangle the ip
@@ -81,11 +84,15 @@ public class Sketch{
 		int word4 = ip & 0xFF;
 
 		totalNumberOfPackets++;*/
+		//long flowid = p.getSrcIp();
+		//String flowid = p.fivetuple();
+		totalNumberOfPackets++;
 
 		// hash the ip and update the appropriate counters
 		for (int i = 0; i < numberOfHashFunctions; i++){
 			// hash word by word numberofHashFunctions times independently
 			int hashbucket = hash(flowid, i);
+			//System.out.println(hashbucket + " " + flowid);
 			hashMatrix[i][hashbucket]++; 
 		}
 	}
@@ -93,7 +100,7 @@ public class Sketch{
 	// update the sketch to reflect that a packet with the id has been received
 	// asume updateCount is called on a packet only once
 	// return an estimate for the flowid associated with the packet p
-	public void updateCountInMinSketch(Packet p){
+	public void updateCountInSketch(Packet p){
 		long flowid = p.getSrcIp();
 		//String flowid = p.fivetuple();
 
@@ -124,7 +131,7 @@ public class Sketch{
 	// query an estimate for the loss of this flow identified by its flow id
 	// using the count-min approach
 	public long estimateLossCount(long flowid){
-		long min = hashMatrix[1][hash(flowid, 0)];
+		long min = hashMatrix[0][hash(flowid, 0)];
 		for (int i = 1; i < numberOfHashFunctions; i++){
 			int hashbucket = hash(flowid, i);
 			if (hashMatrix[i][hashbucket] < min)
@@ -133,4 +140,11 @@ public class Sketch{
 		return min;
 	}
 
+	// reset the sketch by setting all counters to 0
+	public void reset(){
+		for (int i = 0; i < numberOfHashFunctions; i++){
+			for (int j = 0; j < size; j++)
+				hashMatrix[i][j] = 0;
+		}
+	}
 } 
