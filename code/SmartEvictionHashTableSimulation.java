@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class AssymetricHashTableSimulation{
+public class SmartEvictionHashTableSimulation{
 	public static void main(String[] args){
 		final int numberOfTrials = 1000;
 
@@ -22,11 +22,15 @@ public class AssymetricHashTableSimulation{
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) {
 				//for (int thr_index = flowSize_index; thr_index <= flowSize_index + 2; thr_index++) {
 				for (int thr_index = 0; thr_index < threshold.length; thr_index++) {
-					FlowWithCount[] buckets = new FlowWithCount[tableSize[tableSize_index]];
+					int[] buckets = new int[tableSize[tableSize_index]];
 					int droppedPacketInfoCount = 0;
 					int cumDroppedPacketInfoCount = 0;
 					int totalNumberOfPackets = 0;
 					int D = 2;
+
+
+					/*Sketch that maintains the loss of each flow* --- CHANGE THIS SIZE TOO */
+					Sketch countMinSketch = new Sketch(100, 3, numberOfFlows[flowSize_index]);
 
 					// create a set of lost packets which consists of i lost packets of flow i
 					ArrayList<Integer> packets = new ArrayList<Integer>();
@@ -50,10 +54,10 @@ public class AssymetricHashTableSimulation{
 					double observedProbPacketsDroppedAtFlow[] = new double[numberOfFlows[flowSize_index]];
 					double expectedProbPacketsDroppedAtFlow[] = new double[numberOfFlows[flowSize_index]];
 
-					// initialize all the flow tracking buckets to flows with id 0 and count 0
-					buckets = new FlowWithCount[tableSize[tableSize_index]];
+					// initialize all the flow tracking buckets to flows with id 0
+					buckets = new int[tableSize[tableSize_index]];
 					for (int j = 0; j < tableSize[tableSize_index]; j++){
-						buckets[j] = new FlowWithCount(0, 0);
+						buckets[j] = 0;
 					}
 
 					// Across many trials, find the total number of packets lost, track the flows they belong to in a dleft hash table
@@ -64,13 +68,22 @@ public class AssymetricHashTableSimulation{
 					int errorInBinaryAnswer = 0;
 					for (int i = 0; i < numberOfTrials; i++){
 						Collections.shuffle(packets);
-						FlowWithCount.reset(buckets);
+						countMinSketch.reset();
+						
+						//reset buckets for a new trial
+						for (int j = 0; j < tableSize[tableSize_index]; j++){
+						buckets[j] = 0;
+						}
+
 						droppedPacketInfoCount = 0;
 						totalNumberOfPackets = 0; // needed for the denominator to compute the threshold for loss count
 
 						// data plane operation - as lost packets flow, hash them using d-left hashing to track the lossy flows
 						for (int j = 0; j < packets.size(); j++){
 							totalNumberOfPackets++;
+
+							// update the count-min sketch for this flowid
+							countMinSketch.updateCount(packets.get(j));
 
 							/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
 							int k = 0;
@@ -90,6 +103,21 @@ public class AssymetricHashTableSimulation{
 									break;
 								}
 							}
+
+							// TODO: figure out if the incoming flow has a higher loss than one of the existing flows in the table
+							// find a way of tracking the information of the incoming flow because it isnt the hash table
+							// so we don't have information on what its loss count is nd the very first time it comes in, loss is 0
+							if (k == D) {
+								if (countMinSketch.estimateLossCount(buckets[index].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
+									flowsLostAtIndex[packets.get(j) - 1] = 0;
+									flowsLostAtIndex[buckets[index].flowid] = buckets[index].count;
+									lostPacketCount = lostPacketCount + buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+								}
+								else{
+									flowsLostAtIndex[packets.get(j) - 1]++;
+									lostPacketCount++;
+								}
+							}	
 
 							// none of the D locations were free
 							if (k == D) {
