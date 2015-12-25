@@ -5,7 +5,7 @@ public class EvictingHashTableSimulation{
 		int numberOfTrials = Integer.parseInt(args[0]);
 		int numberOfFlows = Integer.parseInt(args[1]);
 		int tableSize = Integer.parseInt(args[2]);
-		double threshold = 0.006;
+		double threshold = 0.003;
 		FlowWithCount[] buckets = new FlowWithCount[tableSize];
 		int D = 2;
 		int droppedPacketInfoCount = 0;

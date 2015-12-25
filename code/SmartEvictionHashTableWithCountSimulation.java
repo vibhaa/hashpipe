@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class AssymetricHashTableSimulation{
+public class SmartEvictionHashTableWithCountSimulation{
 	public static void main(String[] args){
 		final int numberOfTrials = 1000;
 
@@ -13,7 +13,7 @@ public class AssymetricHashTableSimulation{
 		final int hashA[] = {421, 149};
 		final int hashB[] = {73, 109};
 
-		final int numberOfFlows[] = {/*200, 300, */400/*, /*500, 600, 700, 800, 850*/};
+		final int numberOfFlows[] = {/*200, 300, */400/*, 500, 600, 700, 800, 850*/};
 		final int tableSize[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		final double threshold[] = {0.0035, 0.003, 0.0025, 0.002, 0.0015, 0.001, 0.00095, 0.0009, 0.00085, 0.0008};
@@ -27,6 +27,10 @@ public class AssymetricHashTableSimulation{
 					int cumDroppedPacketInfoCount = 0;
 					int totalNumberOfPackets = 0;
 					int D = 2;
+
+
+					/*Sketch that maintains the loss of each flow* --- CHANGE THIS SIZE TOO */
+					Sketch countMinSketch = new Sketch(100, 3, numberOfFlows[flowSize_index]);
 
 					// create a set of lost packets which consists of i lost packets of flow i
 					ArrayList<Integer> packets = new ArrayList<Integer>();
@@ -64,7 +68,9 @@ public class AssymetricHashTableSimulation{
 					int errorInBinaryAnswer = 0;
 					for (int i = 0; i < numberOfTrials; i++){
 						Collections.shuffle(packets);
+						countMinSketch.reset();						
 						FlowWithCount.reset(buckets);
+
 						droppedPacketInfoCount = 0;
 						totalNumberOfPackets = 0; // needed for the denominator to compute the threshold for loss count
 
@@ -72,8 +78,17 @@ public class AssymetricHashTableSimulation{
 						for (int j = 0; j < packets.size(); j++){
 							totalNumberOfPackets++;
 
+							// update the count-min sketch for this flowid
+							countMinSketch.updateCount(packets.get(j));
+
 							/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
 							int k = 0;
+
+							// keep track of which of the d locations has the minimum lost packet count
+							// use this location to place the incoming flow if there is a collision
+							int minIndex = 0;
+							int minValue = -1;
+
 							for (k = 0; k < D; k++){
 								int index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize[tableSize_index]/D) + (k*tableSize[tableSize_index]/D);
 								//int index = (int) ((packets.get(j)%(tableSize[tableSize_index]/D)) *(tableSize[tableSize_index]/D) + k*tableSize[tableSize_index]/D);
@@ -89,12 +104,29 @@ public class AssymetricHashTableSimulation{
 									buckets[index].count = 1;
 									break;
 								}
+
+								// track min - first time explicitly set the value
+								if (buckets[index].count < minValue || k == 0){
+									minValue = buckets[index].count;
+									minIndex = index;
+								}
 							}
 
-							// none of the D locations were free
+							// TODO: figure out if the incoming flow has a higher loss than one of the existing flows in the table
+							// find a way of tracking the information of the incoming flow because it isnt the hash table
+							// so we don't have information on what its loss count is nd the very first time it comes in, loss is 0
 							if (k == D) {
-								packetsInfoDroppedAtFlow[packets.get(j) - 1]++;
-								droppedPacketInfoCount++;
+								if (countMinSketch.estimateLossCount(buckets[minIndex].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
+									packetsInfoDroppedAtFlow[packets.get(j) - 1] = 0;
+									packetsInfoDroppedAtFlow[buckets[minIndex].flowid - 1] = buckets[minIndex].count;
+									droppedPacketInfoCount = droppedPacketInfoCount + buckets[minIndex].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+									buckets[minIndex].flowid = packets.get(j);
+									buckets[minIndex].count = (int) countMinSketch.estimateLossCount(packets.get(j));
+								}
+								else{
+									packetsInfoDroppedAtFlow[packets.get(j) - 1]++;
+									droppedPacketInfoCount++;
+								}
 							}						
 						}
 

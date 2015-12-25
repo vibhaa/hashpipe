@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class SmartEvictionHashTableSimulation{
+public class SmartEvictionHashTableWithoutCountSimulation{
 	public static void main(String[] args){
 		final int numberOfTrials = 1000;
 
@@ -13,7 +13,7 @@ public class SmartEvictionHashTableSimulation{
 		final int hashA[] = {421, 149};
 		final int hashB[] = {73, 109};
 
-		final int numberOfFlows[] = {/*200, 300, 400, */500 /*, 600, 700, 800, 850*/};
+		final int numberOfFlows[] = {/*200, 300, */400/*, 500, 600, 700, 800, 850*/};
 		final int tableSize[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		final double threshold[] = {0.0035, 0.003, 0.0025, 0.002, 0.0015, 0.001, 0.00095, 0.0009, 0.00085, 0.0008};
@@ -54,12 +54,6 @@ public class SmartEvictionHashTableSimulation{
 					double observedProbPacketsDroppedAtFlow[] = new double[numberOfFlows[flowSize_index]];
 					double expectedProbPacketsDroppedAtFlow[] = new double[numberOfFlows[flowSize_index]];
 
-					// initialize all the flow tracking buckets to flows with id 0
-					buckets = new int[tableSize[tableSize_index]];
-					for (int j = 0; j < tableSize[tableSize_index]; j++){
-						buckets[j] = 0;
-					}
-
 					// Across many trials, find the total number of packets lost, track the flows they belong to in a dleft hash table
 					// at the end of the hashing procedure, look through all the tracked flows and see which of them are the big losers
 					// compare this against the expected big losers and see if there is a discrepancy between the answer as to what the
@@ -68,11 +62,12 @@ public class SmartEvictionHashTableSimulation{
 					int errorInBinaryAnswer = 0;
 					for (int i = 0; i < numberOfTrials; i++){
 						Collections.shuffle(packets);
-						countMinSketch.reset();
+						countMinSketch.reset();						
 						
-						//reset buckets for a new trial
-						for (int j = 0; j < tableSize[tableSize_index]; j++){
-						buckets[j] = 0;
+						//FlowWithCount.reset(buckets);
+						// initialize all the flow tracking buckets to flows with id 0
+						for (int t = 0; t < tableSize[tableSize_index]; t++){
+							buckets[t] = 0;
 						}
 
 						droppedPacketInfoCount = 0;
@@ -87,20 +82,30 @@ public class SmartEvictionHashTableSimulation{
 
 							/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
 							int k = 0;
+
+							// keep track of which of the d locations has the minimum lost packet count
+							// use this location to place the incoming flow if there is a collision
+							int minIndex = 0;
+							int minValue = -1;
+
 							for (k = 0; k < D; k++){
 								int index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize[tableSize_index]/D) + (k*tableSize[tableSize_index]/D);
-								//int index = (int) ((packets.get(j)%(tableSize[tableSize_index]/D)) *(tableSize[tableSize_index]/D) + k*tableSize[tableSize_index]/D);
+								//int index = (int) ((packets.get(j)%(tableSize/D)) *(tableSize/D) + k*tableSize/D);
 								// this flow has been seen before
-								if (buckets[index].flowid == packets.get(j)) {
-									buckets[index].count++;
+								if (buckets[index] == packets.get(j)) {
 									break;
 								}
 
 								// new flow
-								if (buckets[index].flowid == 0) {
-									buckets[index].flowid = packets.get(j);
-									buckets[index].count = 1;
+								if (buckets[index] == 0) {
+									buckets[index] = packets.get(j);
 									break;
+								}
+
+								// track min - first time explicitly set the value
+								if (countMinSketch.estimateLossCount(buckets[index]) < minValue || k == 0){
+									minValue = (int) countMinSketch.estimateLossCount(buckets[index]);
+									minIndex = index;
 								}
 							}
 
@@ -108,21 +113,17 @@ public class SmartEvictionHashTableSimulation{
 							// find a way of tracking the information of the incoming flow because it isnt the hash table
 							// so we don't have information on what its loss count is nd the very first time it comes in, loss is 0
 							if (k == D) {
-								if (countMinSketch.estimateLossCount(buckets[index].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
-									flowsLostAtIndex[packets.get(j) - 1] = 0;
-									flowsLostAtIndex[buckets[index].flowid] = buckets[index].count;
-									lostPacketCount = lostPacketCount + buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+								//System.out.println("Min Index: " + minIndex + "minValue: " + minValue + "current id: " + packets.get(j) + "existing id: " + buckets[minIndex]);
+								if (countMinSketch.estimateLossCount(buckets[minIndex]) < countMinSketch.estimateLossCount(packets.get(j))){
+									packetsInfoDroppedAtFlow[packets.get(j) - 1] = 0;
+									packetsInfoDroppedAtFlow[buckets[minIndex] - 1] = (int) countMinSketch.estimateLossCount(buckets[minIndex]);
+									droppedPacketInfoCount = droppedPacketInfoCount + (int) countMinSketch.estimateLossCount(buckets[minIndex]) - (int) countMinSketch.estimateLossCount(packets.get(j));
+									buckets[minIndex] = packets.get(j);
 								}
 								else{
-									flowsLostAtIndex[packets.get(j) - 1]++;
-									lostPacketCount++;
+									packetsInfoDroppedAtFlow[packets.get(j) - 1]++;
+									droppedPacketInfoCount++;
 								}
-							}	
-
-							// none of the D locations were free
-							if (k == D) {
-								packetsInfoDroppedAtFlow[packets.get(j) - 1]++;
-								droppedPacketInfoCount++;
 							}						
 						}
 
@@ -142,9 +143,11 @@ public class SmartEvictionHashTableSimulation{
 						// controller operation at regular intervals
 						// go through all the entries in the hash table and check if any of them are above the total loss count
 						HashSet<Integer> observedLossyFlows = new HashSet<Integer>();
-						for (FlowWithCount f : buckets){
-							if (f.count > threshold[thr_index]*totalNumberOfPackets)
-								observedLossyFlows.add(f.flowid);
+						for (int f : buckets){
+							if (countMinSketch.estimateLossCount(f) > threshold[thr_index]*totalNumberOfPackets){
+								observedLossyFlows.add(f);
+								//System.out.println(f);
+							}
 						}
 
 						// compare observed and expected lossy flows and compute the probability of error
