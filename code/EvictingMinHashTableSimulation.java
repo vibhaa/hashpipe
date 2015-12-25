@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class EvictingHashTableSimulation{
+public class EvictingMinHashTableSimulation{
 	public static void main(String[] args){
 		int numberOfTrials = Integer.parseInt(args[0]);
 		int numberOfFlows = Integer.parseInt(args[1]);
@@ -71,6 +71,12 @@ public class EvictingHashTableSimulation{
 				/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
 				int index = 0;
 				int k = 0;
+
+				// keep track of which of the d locations has the minimum lost packet count
+				// use this location to place the incoming flow if there is a collision
+				int minIndex = 0;
+				int minValue = -1;
+
 				for (k = 0; k < D; k++){
 					index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
 					//int index = (int) ((packets.get(j)%(tableSize/D)) *(tableSize/D) + k*tableSize/D);
@@ -86,6 +92,12 @@ public class EvictingHashTableSimulation{
 						buckets[index].count = 1;
 						break;
 					}
+
+					// track min - first time explicitly set the value
+					if (buckets[index].count < minValue || k == 0){
+						minValue = buckets[index].count;
+						minIndex = index;
+					}
 				}
 
 				// none of the D locations were free - hash collission
@@ -95,12 +107,12 @@ public class EvictingHashTableSimulation{
 				// find a way of tracking the information of the incoming flow because it isnt the hash table
 				// so we don't have information on what its loss count is nd the very first time it comes in, loss is 0
 				if (k == D) {
-					if (countMinSketch.estimateLossCount(buckets[index].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
+					if (countMinSketch.estimateLossCount(buckets[minIndex].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
 						packetsInfoDroppedAtFlow[packets.get(j) - 1] = 0;
-						packetsInfoDroppedAtFlow[buckets[index].flowid - 1] = buckets[index].count;
-						droppedPacketInfoCount = droppedPacketInfoCount + buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
-						buckets[index].flowid = packets.get(j);
-						buckets[index].count = (int) countMinSketch.estimateLossCount(packets.get(j));
+						packetsInfoDroppedAtFlow[buckets[minIndex].flowid - 1] = buckets[minIndex].count;
+						droppedPacketInfoCount = droppedPacketInfoCount + buckets[minIndex].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+						buckets[minIndex].flowid = packets.get(j);
+						buckets[minIndex].count = (int) countMinSketch.estimateLossCount(packets.get(j));
 					}
 					else{
 						packetsInfoDroppedAtFlow[packets.get(j) - 1]++;

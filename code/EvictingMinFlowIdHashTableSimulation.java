@@ -1,12 +1,12 @@
 import java.util.*;
 
-public class EvictingHashTableSimulation{
+public class EvictingMinFlowIdHashTableSimulation{
 	public static void main(String[] args){
 		int numberOfTrials = Integer.parseInt(args[0]);
 		int numberOfFlows = Integer.parseInt(args[1]);
 		int tableSize = Integer.parseInt(args[2]);
 		double threshold = 0.006;
-		FlowWithCount[] buckets = new FlowWithCount[tableSize];
+		int[] buckets = new int[tableSize]; // tracks only the flow id and not the assciated loss count
 		int D = 2;
 		int droppedPacketInfoCount = 0;
 		int cumDroppedPacketInfoCount = 0;
@@ -40,12 +40,6 @@ public class EvictingHashTableSimulation{
 		double observedProbPacketsDroppedAtFlow[] = new double[numberOfFlows];
 		double expectedProbPacketsDroppedAtFlow[] = new double[numberOfFlows];
 
-		// initialize all the flow tracking buckets to flows with id 0 and count 0
-		buckets = new FlowWithCount[tableSize];
-		for (int j = 0; j < tableSize; j++){
-			buckets[j] = new FlowWithCount(0, 0);
-		}
-
 		// Across many trials, find the total number of packets lost, track the flows they belong to in a dleft hash table
 		// at the end of the hashing procedure, look through all the tracked flows and see which of them are the big losers
 		// compare this against the expected big losers and see if there is a discrepancy between the answer as to what the
@@ -55,7 +49,12 @@ public class EvictingHashTableSimulation{
 		for (int i = 0; i < numberOfTrials; i++){
 			Collections.shuffle(packets);
 			countMinSketch.reset();						
-			FlowWithCount.reset(buckets);
+			
+			//FlowWithCount.reset(buckets);
+			// initialize all the flow tracking buckets to flows with id 0
+			for (int t = 0; t < tableSize; t++){
+				buckets[t] = 0;
+			}
 
 			droppedPacketInfoCount = 0;
 			totalNumberOfPackets = 0; // needed for the denominator to compute the threshold for loss count
@@ -71,20 +70,30 @@ public class EvictingHashTableSimulation{
 				/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
 				int index = 0;
 				int k = 0;
+
+				// keep track of which of the d locations has the minimum lost packet count
+				// use this location to place the incoming flow if there is a collision
+				int minIndex = 0;
+				int minValue = -1;
+
 				for (k = 0; k < D; k++){
 					index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
 					//int index = (int) ((packets.get(j)%(tableSize/D)) *(tableSize/D) + k*tableSize/D);
 					// this flow has been seen before
-					if (buckets[index].flowid == packets.get(j)) {
-						buckets[index].count++;
+					if (buckets[index] == packets.get(j)) {
 						break;
 					}
 
 					// new flow
-					if (buckets[index].flowid == 0) {
-						buckets[index].flowid = packets.get(j);
-						buckets[index].count = 1;
+					if (buckets[index] == 0) {
+						buckets[index] = packets.get(j);
 						break;
+					}
+
+					// track min - first time explicitly set the value
+					if (countMinSketch.estimateLossCount(buckets[index]) < minValue || k == 0){
+						minValue = (int) countMinSketch.estimateLossCount(buckets[index]);
+						minIndex = index;
 					}
 				}
 
@@ -95,12 +104,12 @@ public class EvictingHashTableSimulation{
 				// find a way of tracking the information of the incoming flow because it isnt the hash table
 				// so we don't have information on what its loss count is nd the very first time it comes in, loss is 0
 				if (k == D) {
-					if (countMinSketch.estimateLossCount(buckets[index].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
+					System.out.println("Min Index: " + minIndex + "minValue: " + minValue + "current id: " + packets.get(j) + "existing id: " + buckets[minIndex]);
+					if (countMinSketch.estimateLossCount(buckets[minIndex]) < countMinSketch.estimateLossCount(packets.get(j))){
 						packetsInfoDroppedAtFlow[packets.get(j) - 1] = 0;
-						packetsInfoDroppedAtFlow[buckets[index].flowid - 1] = buckets[index].count;
-						droppedPacketInfoCount = droppedPacketInfoCount + buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
-						buckets[index].flowid = packets.get(j);
-						buckets[index].count = (int) countMinSketch.estimateLossCount(packets.get(j));
+						packetsInfoDroppedAtFlow[buckets[minIndex] - 1] = (int) countMinSketch.estimateLossCount(buckets[minIndex]);
+						droppedPacketInfoCount = droppedPacketInfoCount + (int) countMinSketch.estimateLossCount(buckets[minIndex]) - (int) countMinSketch.estimateLossCount(packets.get(j));
+						buckets[minIndex] = packets.get(j);
 					}
 					else{
 						packetsInfoDroppedAtFlow[packets.get(j) - 1]++;
@@ -114,15 +123,19 @@ public class EvictingHashTableSimulation{
 			// controller operation at regular intervals
 			// go through all the entries in the hash table and check if any of them are above the total loss count
 			HashSet<Integer> observedLossyFlows = new HashSet<Integer>();
-			for (FlowWithCount f : buckets){
-				if (f.count > threshold*totalNumberOfPackets)
-					observedLossyFlows.add(f.flowid);
+			for (int f : buckets){
+				if (countMinSketch.estimateLossCount(f) > threshold*totalNumberOfPackets){
+					observedLossyFlows.add(f);
+					System.out.println(f);
+				}
 			}
 
 			// compare observed and expected lossy flows and compute the probability of error
 			int bigLoserPacketsLost = 0;
 			int flag = 0;
+			System.out.println("Expected:");
 			for (Integer flowid : expectedLossyFlows){
+				System.out.println(flowid);
 				if (!observedLossyFlows.contains(flowid)){
 					if (flag != 1){
 						// if there is even one point of difference, there is an error in binary yes/no or what flows contributed to loss
