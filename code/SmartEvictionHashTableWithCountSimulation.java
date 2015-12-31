@@ -1,5 +1,24 @@
 import java.util.*;
 
+
+/* eviction heuristic (compare the incoming flow's loss against that of
+	the flow  with minimum loss amongst flows at all d locations) 
+	added to the standard hash table simulation to track 
+	the unique flows experiencing loss using the D-Left hashing procedure */
+
+ /* NOTE: Accuracy isn't better than just maintaining the flow id in
+ the hash table - simulations are in Smart Eviction Simulation file*/
+
+ /* version of hash table simulation that stores both flow id and count
+ 	in the hash table, but uses the count-min sketch to estimate the loss 
+ 	for a flow that is not yet in the hash table and just came in; this is
+ 	used to perform the eviction heuristic
+
+ 	runs experiments on a certain number of flows and for a given table size
+	across multiple thresholds and averages out the results across a preset
+	number of trials and reports the results in a csv format
+*/
+
 public class SmartEvictionHashTableWithCountSimulation{
 	public static void main(String[] args){
 		final int numberOfTrials = 1000;
@@ -87,7 +106,7 @@ public class SmartEvictionHashTableWithCountSimulation{
 							// keep track of which of the d locations has the minimum lost packet count
 							// use this location to place the incoming flow if there is a collision
 							int minIndex = 0;
-							int minValue = -1;
+							long minValue = -1;
 
 							for (k = 0; k < D; k++){
 								int index = ((hashA[k]*packets.get(j) + hashB[k]) % P) % (tableSize[tableSize_index]/D) + (k*tableSize[tableSize_index]/D);
@@ -118,8 +137,8 @@ public class SmartEvictionHashTableWithCountSimulation{
 							if (k == D) {
 								if (countMinSketch.estimateLossCount(buckets[minIndex].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
 									packetsInfoDroppedAtFlow[packets.get(j) - 1] = 0;
-									packetsInfoDroppedAtFlow[buckets[minIndex].flowid - 1] = buckets[minIndex].count;
-									droppedPacketInfoCount = droppedPacketInfoCount + buckets[minIndex].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+									packetsInfoDroppedAtFlow[buckets[minIndex].flowid - 1] = (int) buckets[minIndex].count;
+									droppedPacketInfoCount = droppedPacketInfoCount + (int) buckets[minIndex].count - (int) countMinSketch.estimateLossCount(packets.get(j));
 									buckets[minIndex].flowid = packets.get(j);
 									buckets[minIndex].count = (int) countMinSketch.estimateLossCount(packets.get(j));
 								}

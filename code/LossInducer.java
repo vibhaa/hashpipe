@@ -1,5 +1,8 @@
 import java.util.*;
 
+/* 	class that facilitates loss creation on a stream of packets
+	by choosing flow(s) to be loss and returning all packets but
+	those belonging to the flow*/
 public class LossInducer{
 	private int numberOfLossyFlows;
 	private int granularity;

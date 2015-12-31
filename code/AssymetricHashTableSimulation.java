@@ -1,5 +1,15 @@
 import java.util.*;
 
+/* hash table simulation to track the unique flows experiencing loss
+	using the D-Left hashing procedure where each flow id is hashed exactly
+	d times to generate d locations where the flow and its loss might be
+	stored
+
+	runs experiments on a certain number of flows and for a given table size
+	across multiple thresholds and averages out the results across a preset
+	number of trials and reports the results in a csv format
+*/
+
 public class AssymetricHashTableSimulation{
 	public static void main(String[] args){
 		final int numberOfTrials = 1000;
@@ -63,7 +73,7 @@ public class AssymetricHashTableSimulation{
 					double cumErrorMargin = 0;
 					int errorInBinaryAnswer = 0;
 					for (int i = 0; i < numberOfTrials; i++){
-						Collections.shuffle(packets);
+						//Collections.shuffle(packets); - don't shuffle for worst case scenario of all big losers being at the end
 						FlowWithCount.reset(buckets);
 						droppedPacketInfoCount = 0;
 						totalNumberOfPackets = 0; // needed for the denominator to compute the threshold for loss count

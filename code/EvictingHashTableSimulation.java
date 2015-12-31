@@ -1,5 +1,12 @@
 import java.util.*;
 
+/* eviction heuristic (compare the incoming flow's loss against that of
+	the flow at the last of the d locations) added to the standard 
+	hash table simulation to track the unique flows experiencing loss
+	using the D-Left hashing procedure where each flow id is hashed exactly
+	d times to generate d locations where the flow and its loss might be
+	stored*/
+
 public class EvictingHashTableSimulation{
 	public static void main(String[] args){
 		int numberOfTrials = Integer.parseInt(args[0]);
@@ -97,8 +104,8 @@ public class EvictingHashTableSimulation{
 				if (k == D) {
 					if (countMinSketch.estimateLossCount(buckets[index].flowid) < countMinSketch.estimateLossCount(packets.get(j))){
 						packetsInfoDroppedAtFlow[packets.get(j) - 1] = 0;
-						packetsInfoDroppedAtFlow[buckets[index].flowid - 1] = buckets[index].count;
-						droppedPacketInfoCount = droppedPacketInfoCount + buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
+						packetsInfoDroppedAtFlow[buckets[index].flowid - 1] = (int) buckets[index].count;
+						droppedPacketInfoCount = droppedPacketInfoCount + (int) buckets[index].count - (int) countMinSketch.estimateLossCount(packets.get(j));
 						buckets[index].flowid = packets.get(j);
 						buckets[index].count = (int) countMinSketch.estimateLossCount(packets.get(j));
 					}

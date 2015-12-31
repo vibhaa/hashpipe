@@ -1,5 +1,19 @@
 import java.util.*;
 
+/* eviction heuristic (compare the incoming flow's loss against that of
+	the flow  with minimum loss amongst flows at all d locations) 
+	added to the standard hash table simulation to track 
+	the unique flows experiencing loss using the D-Left hashing procedure */
+
+/* version of hash table simulation that uses the eviction heuristic
+ but only stores the flow id in the hash table
+ and uses the count-min sketch to estimate the loss count
+
+ 	runs experiments on a certain number of flows and for a given table size
+	across multiple thresholds and averages out the results across a preset
+	number of trials and reports the results in a csv format
+*/
+
 public class SmartEvictionHashTableWithoutCountSimulation{
 	public static void main(String[] args){
 		final int numberOfTrials = 1000;
@@ -30,7 +44,7 @@ public class SmartEvictionHashTableWithoutCountSimulation{
 
 
 					/*Sketch that maintains the loss of each flow* --- CHANGE THIS SIZE TOO */
-					Sketch countMinSketch = new Sketch(100, 3, numberOfFlows[flowSize_index]);
+					Sketch countMinSketch = new Sketch((int) tableSize[tableSize_index]/3, 3, numberOfFlows[flowSize_index]);
 
 					// create a set of lost packets which consists of i lost packets of flow i
 					ArrayList<Integer> packets = new ArrayList<Integer>();
@@ -61,7 +75,7 @@ public class SmartEvictionHashTableWithoutCountSimulation{
 					double cumErrorMargin = 0;
 					int errorInBinaryAnswer = 0;
 					for (int i = 0; i < numberOfTrials; i++){
-						Collections.shuffle(packets);
+						//Collections.shuffle(packets);
 						countMinSketch.reset();						
 						
 						//FlowWithCount.reset(buckets);

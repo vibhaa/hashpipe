@@ -1,5 +1,15 @@
 import java.*;
 
+/* count min sketch that is used to maintain a summary data structure
+   to estimate the frequency of occurence of certain items in a data
+   stream
+
+   used in this context to count the number of packets per flow that
+   have been lost
+
+	initially used to simulate reversible sketches too - hence, there
+	is some commented out code that belongs to that technique
+*/
 public class Sketch{
 	private int size;							// K or the max number of buckets in a hash table
 	private int numberOfHashFunctions; 		 	// H

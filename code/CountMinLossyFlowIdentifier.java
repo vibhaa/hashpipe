@@ -1,5 +1,12 @@
 import java.util.*;
 
+ /* incomplete code and hasn't been used */
+
+/* Data Structure that identifies the big losers
+   by maintaining a count-min sketch and a heap that
+   is updated for every incoming packet by checking
+   if the flow it belongs to has exceeded the threshold*/
+
 public class CountMinLossyFlowIdentifier{
 	public TreeMap<Long, Integer> heavyhitters; 
 	public final Comparator lossyFlowComparator;

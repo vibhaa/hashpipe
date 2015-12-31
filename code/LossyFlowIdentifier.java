@@ -1,5 +1,12 @@
 import java.util.*;
 
+/* high level procedure that uses packet info from a csv file, parses it,
+   induces loss on it, and produces a sketch for the lost packet on which
+   the big loser identification process is performed 
+
+   initially written for the sketches to all be reversible so that the 
+   reversibility procedure would identify the lossy buckets - unused 
+   code in the context of the hash table approach*/
 public class LossyFlowIdentifier{
 	public static PriorityQueue<LossyFlow> HeapOfLossyFlows; 
 	private class BucketMatrixIndex{

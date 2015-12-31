@@ -1,8 +1,11 @@
+/*Data Structure used as a building block for the hash table
+ that tracks the lossy packets*/
+
 public class FlowWithCount{
-		int count;
+		long count;
 		int flowid;
 
-		public FlowWithCount(int flowid ,int count){
+		public FlowWithCount(int flowid ,long count){
 			this.count = count;
 			this.flowid = flowid;
 		}

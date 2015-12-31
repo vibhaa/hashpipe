@@ -1,5 +1,7 @@
 import java.util.*;
 
+/* abstraction for Packets in a network that helps retrieve 
+   the key fields from the packet*/
 public class Packet{
 	private long srcip;
 	private long dstip;

@@ -1,5 +1,10 @@
 import java.util.*;
 
+/* hash table simulation to track the unique flows experiencing loss
+	using the standard technique where each flow id is hashed exactly
+	once to generate one location where the flow and its loss are
+	stored*/
+
 public class HashTableSimulation{
 	public static void main(String[] args){
 		int numberOfTrials = Integer.parseInt(args[0]);
@@ -25,6 +30,7 @@ public class HashTableSimulation{
 			buckets[j] = new FlowWithCount(0, 0);
 		}
 
+		// create a set of lost packets which consists of i lost packets of flow i
 		List<Integer> packets = new ArrayList<>();
 		// add i packets of  flowid i
 		for (int i = 1; i <= numberOfFlows; i++)
