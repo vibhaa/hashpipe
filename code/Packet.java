@@ -29,7 +29,7 @@ public class Packet{
 		return Long.toString(srcip); /* + long.toString(dstip) + srcPort + dstPort + protocol;*/
 	}
 
-	public static ArrayList<Packet> computeDiff(HashSet<Packet> startPointPackets, HashSet<Packet> endPointPackets){
+	public static ArrayList<Packet> computeDiff(ArrayList<Packet> startPointPackets, HashSet<Packet> endPointPackets){
 		ArrayList<Packet> diffPackets = new ArrayList<Packet>();
 
 		for (Packet p: startPointPackets){

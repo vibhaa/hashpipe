@@ -1,5 +1,10 @@
 import java.util.*;
 
+/* eviction heuristic (compare the incoming flow's loss against that of
+	the flow  with minimum loss amongst flows at all d locations) 
+	added to the standard hash table simulation to track 
+	the unique flows experiencing loss using the D-Left hashing procedure */
+
 /* version of hash table simulation that stores both flow id and count
  in the hash table, but uses the count-min sketch to estimate the loss 
  for a flow that is not yet in the hash table and just came in; this is

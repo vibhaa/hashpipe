@@ -3,9 +3,9 @@
 
 public class FlowWithCount{
 		long count;
-		int flowid;
+		long flowid;
 
-		public FlowWithCount(int flowid ,long count){
+		public FlowWithCount(long flowid ,long count){
 			this.count = count;
 			this.flowid = flowid;
 		}

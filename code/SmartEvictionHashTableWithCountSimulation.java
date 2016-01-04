@@ -25,7 +25,7 @@ public class SmartEvictionHashTableWithCountSimulation{
 
 		// print the header for the csv
 		System.out.print("numberOfFlows" + ", " + "tableSize" + ", " + "threshold" + ",");
-		System.out.println("errorInBinaryAnswer" + "," + "Error Margin" + ", Number of Dropped Packets" + ",");
+		System.out.println("errorInBinaryAnswer" + "," + "Error Margin" + ", Number of Dropped Packets" + "," + "numberOfFalsePositives" + "," + "numberOfFalseNegatives," );
 
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 1019;
@@ -85,6 +85,8 @@ public class SmartEvictionHashTableWithCountSimulation{
 					// big losers are, if yes, find how much of the loss went unreported as a fraction of the total loss
 					double cumErrorMargin = 0;
 					int errorInBinaryAnswer = 0;
+					int numberOfFalseNegatives = 0;
+					int numberOfFalsePositives = 0;
 					for (int i = 0; i < numberOfTrials; i++){
 						Collections.shuffle(packets);
 						countMinSketch.reset();						
@@ -186,6 +188,19 @@ public class SmartEvictionHashTableWithCountSimulation{
 
 						double errorMargin = bigLoserPacketsLost/(double) totalNumberOfPackets;
 						cumErrorMargin += errorMargin;
+
+						for (Integer flowid : expectedLossyFlows){
+							if (!observedLossyFlows.contains(flowid)){
+								numberOfFalseNegatives++;
+							}
+						}
+
+						for (Integer flowid : observedLossyFlows){
+							//System.out.println(FlowDataParser.convertLongToAddress(flowid));
+							if (!expectedLossyFlows.contains(flowid)){
+								numberOfFalsePositives++;
+							}
+						}
 					}
 
 
@@ -198,7 +213,8 @@ public class SmartEvictionHashTableWithCountSimulation{
 					// chances of an error in binary answer
 					System.out.print(numberOfFlows[flowSize_index] + ", " + tableSize[tableSize_index] + ", " + threshold[thr_index] + ",");
 					System.out.print(errorInBinaryAnswer/(double) numberOfTrials + "," + cumErrorMargin/ numberOfTrials + ",");
-					System.out.println(cumDroppedPacketInfoCount/(double) numberOfTrials + ",");
+					System.out.print(cumDroppedPacketInfoCount/(double) numberOfTrials + ",");
+					System.out.println((double) numberOfFalsePositives/numberOfTrials + "," + (double) numberOfFalseNegatives/numberOfTrials);
 				}
 			}
 		}

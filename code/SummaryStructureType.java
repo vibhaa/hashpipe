@@ -1,0 +1,1 @@
+public enum SummaryStructureType{ DLeft, BasicHeuristic, EvictionWithCount, EvictionWithoutCount};

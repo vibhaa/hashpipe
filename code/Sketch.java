@@ -80,7 +80,7 @@ public class Sketch{
 
 	// update the sketch to reflect that a packet with the id has been received
 	// asume updateCount is called on a packet only once
-	public void updateCount(int flowid){
+	public void updateCount(long flowid){
 		//String flowid = p.fivetuple();
 
 		/* mangle the ip

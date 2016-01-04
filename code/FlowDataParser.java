@@ -26,8 +26,13 @@ public class FlowDataParser{
 		return val;
 	}
 
-	public static HashSet<Packet> parsePacketData(String filename){
-		HashSet<Packet> packetStream = new HashSet<Packet>();
+	public static String convertLongToAddress(long ip){
+		return String.format("%d.%d.%d.%d", (ip & 0xff), (ip >> 8 & 0xff), (ip >> 16 & 0xff), (ip >> 24 & 0xff));
+		//return ipStr;
+	}
+
+	public static ArrayList<Packet> parsePacketData(String filename){
+		ArrayList<Packet> packetStream = new ArrayList<Packet>();
 		File file = new File(filename);
 		try
 		{
@@ -38,20 +43,20 @@ public class FlowDataParser{
 			while (scanner.hasNextLine())
 			{
 				line = scanner.nextLine();
-				if (linenumber++ == 0)
-					continue;
+				/*if (linenumber++ == 0)
+					continue;*/
 
 				fields = line.split(",");
 
-				String srcipString = fields[10];
+				String srcipString = fields[3];
 				long srcip = convertAddressToLong(srcipString);
 
-				String dstipString = fields[11];
+				String dstipString = fields[4];
 				long dstip = convertAddressToLong(dstipString);
 
-				String srcPort = fields[15];
-				String dstPort = fields[16];;
-				String protocol = fields[17];
+				String srcPort = fields[5];
+				String dstPort = fields[6];;
+				String protocol = fields[7];
 				Packet p = new Packet(srcip, dstip, srcPort, dstPort, protocol);
 				packetStream.add(p);
 			}

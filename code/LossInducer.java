@@ -15,12 +15,42 @@ public class LossInducer{
 	// takes in an original packet stream and a flow that we want to deliberately make lossy
 	// and returns a packet stream with all the packets but those on the flow to be lost
 	// flow recognized by the srcip
-	public static HashSet<Packet> createSingleLossyFlow(HashSet<Packet> packetStream, String flowToBeLost){
+	public static HashSet<Packet> createSingleLossyFlow(ArrayList<Packet> packetStream, String flowToBeLost){
 		HashSet<Packet> lossyStream = new HashSet<Packet>();
 		long ipToBeLost = FlowDataParser.convertAddressToLong(flowToBeLost);
 		for (Packet p : packetStream){
-			if (p.getSrcIp() == ipToBeLost)
+			if (p.getSrcIp() != ipToBeLost){
 				lossyStream.add(p);
+				//System.out.println(p.getSrcIp());
+			}
+		}
+
+		return lossyStream;
+	}
+
+	// takes in an original packet stream and flows that we want to deliberately make lossy
+	// and returns a packet stream with all the packets but those in the flows to be lost
+	// flow recognized by the srcip
+	public static HashSet<Packet> createSingleLossyFlow(ArrayList<Packet> packetStream, String[] flowsToBeLost){
+		HashSet<Packet> lossyStream = new HashSet<Packet>();
+
+		long[] ipsToBeLost = new long[flowsToBeLost.length];
+		for (int i = 0; i < ipsToBeLost.length; i++){
+			ipsToBeLost[i] = FlowDataParser.convertAddressToLong(flowsToBeLost[i]);
+		}
+		
+		for (Packet p : packetStream){
+			long srcip = p.getSrcIp();
+			int i;
+			for (i = 0; i < ipsToBeLost.length; i++){
+				if (p.getSrcIp() == ipsToBeLost[i])
+					break;
+			}
+
+			if (i == ipsToBeLost.length){
+				lossyStream.add(p);
+				//System.out.println(p.getSrcIp());
+			}
 		}
 
 		return lossyStream;

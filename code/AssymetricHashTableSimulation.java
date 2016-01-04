@@ -16,7 +16,8 @@ public class AssymetricHashTableSimulation{
 
 		// print the header for the csv
 		System.out.print("numberOfFlows" + ", " + "tableSize" + ", " + "threshold" + ",");
-		System.out.println("errorInBinaryAnswer" + "," + "Error Margin" + ", Number of Dropped Packets" + ",");
+		System.out.print("errorInBinaryAnswer" + "," + "Error Margin" + ", Number of Dropped Packets" + ",");
+		System.out.println("numberOfFalsePositives" + "," + "numberOfFalseNegatives," );
 
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 1019;
@@ -72,8 +73,10 @@ public class AssymetricHashTableSimulation{
 					// big losers are, if yes, find how much of the loss went unreported as a fraction of the total loss
 					double cumErrorMargin = 0;
 					int errorInBinaryAnswer = 0;
+					int numberOfFalseNegatives = 0;
+					int numberOfFalsePositives = 0;
 					for (int i = 0; i < numberOfTrials; i++){
-						//Collections.shuffle(packets); - don't shuffle for worst case scenario of all big losers being at the end
+						//Collections.shuffle(packets); //- don't shuffle for worst case scenario of all big losers being at the end
 						FlowWithCount.reset(buckets);
 						droppedPacketInfoCount = 0;
 						totalNumberOfPackets = 0; // needed for the denominator to compute the threshold for loss count
@@ -145,6 +148,19 @@ public class AssymetricHashTableSimulation{
 
 						double errorMargin = bigLoserPacketsLost/(double) totalNumberOfPackets;
 						cumErrorMargin += errorMargin;
+
+						for (Integer flowid : expectedLossyFlows){
+							if (!observedLossyFlows.contains(flowid)){
+								numberOfFalseNegatives++;
+							}
+						}
+
+						for (Integer flowid : observedLossyFlows){
+							//System.out.println(FlowDataParser.convertLongToAddress(flowid));
+							if (!expectedLossyFlows.contains(flowid)){
+								numberOfFalsePositives++;
+							}
+						}
 					}
 
 
@@ -157,7 +173,8 @@ public class AssymetricHashTableSimulation{
 					// chances of an error in binary answer
 					System.out.print(numberOfFlows[flowSize_index] + ", " + tableSize[tableSize_index] + ", " + threshold[thr_index] + ",");
 					System.out.print(errorInBinaryAnswer/(double) numberOfTrials + "," + cumErrorMargin/ numberOfTrials + ",");
-					System.out.println(cumDroppedPacketInfoCount/(double) numberOfTrials + ",");
+					System.out.print(cumDroppedPacketInfoCount/(double) numberOfTrials + ",");
+					System.out.println((double) numberOfFalsePositives/numberOfTrials + "," + (double) numberOfFalseNegatives/numberOfTrials);
 				}
 			}
 		}

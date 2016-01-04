@@ -41,7 +41,7 @@ public class CountMinLossyFlowIdentifier{
 
 		// pass the filename from which the packet data needs to be parsed
 		// assuming that a hashSet takes the same time to add as an array list
-		ArrayList<Packet> originalPacketStream = parseData(args[1]);
+		HashSet<Packet> originalPacketStream = parseData(args[1]);
 
 		// read the flow to be lost from the command line and create a new stream with that flow lost
 		long flowToBeLost = Integer.parseInt(args[2]);
