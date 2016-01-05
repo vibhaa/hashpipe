@@ -31,17 +31,18 @@ public class LossInducer{
 	// takes in an original packet stream and flows that we want to deliberately make lossy
 	// and returns a packet stream with all the packets but those in the flows to be lost
 	// flow recognized by the srcip
-	public static HashSet<Packet> createSingleLossyFlow(ArrayList<Packet> packetStream, String[] flowsToBeLost){
+	public static HashSet<Packet> createSingleLossyFlow(ArrayList<Packet> packetStream, ArrayList<String> flowsToBeLost){
 		HashSet<Packet> lossyStream = new HashSet<Packet>();
 
-		long[] ipsToBeLost = new long[flowsToBeLost.length];
-		for (int i = 0; i < ipsToBeLost.length; i++){
-			ipsToBeLost[i] = FlowDataParser.convertAddressToLong(flowsToBeLost[i]);
+		long[] ipsToBeLost = new long[flowsToBeLost.size()];
+		int i = 0;
+		for (String f: flowsToBeLost){
+			ipsToBeLost[i++] = FlowDataParser.convertAddressToLong(f);
 		}
 		
 		for (Packet p : packetStream){
 			long srcip = p.getSrcIp();
-			int i;
+			//int i;
 			for (i = 0; i < ipsToBeLost.length; i++){
 				if (p.getSrcIp() == ipsToBeLost[i])
 					break;

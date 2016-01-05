@@ -45,7 +45,7 @@ public class BasicHeuristicHashTableSimulation{
 					// create a set of lost packets which consists of i lost packets of flow i
 					ArrayList<Integer> packets = new ArrayList<Integer>();
 					// add i packets of  flowid i
-					for (int i = 1; i <= numberOfFlows[flowSize_index]; i++)
+					for (int i = numberOfFlows[flowSize_index]; i >= 1 ; i--)
 						for (int j = 0; j < i; j++)
 							packets.add(i);
 
@@ -79,7 +79,7 @@ public class BasicHeuristicHashTableSimulation{
 					int numberOfFalseNegatives = 0;
 					int numberOfFalsePositives = 0;
 					for (int i = 0; i < numberOfTrials; i++){
-						Collections.shuffle(packets); //- don't shuffle for worst case scenario of all big losers being at the end
+						//Collections.shuffle(packets); //- don't shuffle for worst case scenario of all big losers being at the end
 						FlowWithCount.reset(buckets);
 						droppedPacketInfoCount = 0;
 						totalNumberOfPackets = 0; // needed for the denominator to compute the threshold for loss count

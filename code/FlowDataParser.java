@@ -57,8 +57,12 @@ public class FlowDataParser{
 				String srcPort = fields[5];
 				String dstPort = fields[6];;
 				String protocol = fields[7];
-				Packet p = new Packet(srcip, dstip, srcPort, dstPort, protocol);
-				packetStream.add(p);
+
+				// field[11] contains the number of such packets, so create that many packets
+				for (int i = 0; i < Integer.parseInt(fields[11]); i++){
+					Packet p = new Packet(srcip, dstip, srcPort, dstPort, protocol);
+					packetStream.add(p);
+				}
 			}
 			scanner.close();
 			return packetStream;
