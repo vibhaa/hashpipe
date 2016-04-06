@@ -49,17 +49,19 @@ public class LossyFlowIdentifier{
 		int numberOfFalseNegatives = 0;
 		long bigLoserPacketReported = 0;
 		long bigLoserPacketCount = 0;
+		float occupiedSlots = 0;
 
 		double cumDeviation = 0;
 		HashMap<Long, Long> observedLossyFlows = new HashMap<Long, Long>();
 		for (int t = 0; t < numberOfTrials; t++){
-			
+
 			// track the unique lost flows
 			DLeftHashTable lostFlowHashTable = new DLeftHashTable(tableSize, type, lostPacketStream.size());
+			int count = 0;
 			for (Packet p : lostPacketStream){
 				//lostPacketSketch.updateCountInSketch(p);
 				//System.out.println(p.getSrcIp());
-				lostFlowHashTable.processData(p.getSrcIp());
+				lostFlowHashTable.processData(p.getSrcIp(), count++);
 			}
 
 			cumDroppedPacketInfoCount += lostFlowHashTable.getDroppedPacketInfoCount();
@@ -68,6 +70,9 @@ public class LossyFlowIdentifier{
 			if (type == SummaryStructureType.EvictionWithoutCount){
 				Sketch lossEstimateSketch = lostFlowHashTable.getSketch();
 				for (Long f : lostFlowHashTable.getFlowIdBuckets()){
+					if (f != 0)
+						occupiedSlots++;
+
 					if (f != 0 && lossEstimateSketch.estimateLossCount(f) > threshold*lostPacketStream.size()){
 						observedLossyFlows.put(f, lossEstimateSketch.estimateLossCount(f));
 					//System.out.println(f.flowid);
@@ -76,7 +81,11 @@ public class LossyFlowIdentifier{
 			}
 			else {
 				for (FlowWithCount f : lostFlowHashTable.getBuckets()){
-					if (f.count > threshold*lostPacketStream.size()){
+					if (f.flowid != 0)
+						occupiedSlots++;
+
+					//System.out.println(f.flowid + " " + f.count); 
+					if (/*f.flowid != 0 && */f.count > threshold*lostPacketStream.size()){
 						observedLossyFlows.put(f.flowid, f.count);
 					//System.out.println(f.flowid);
 					}
@@ -98,14 +107,22 @@ public class LossyFlowIdentifier{
 				bigLoserPacketCount += lostFlowSizes.get(flowid);
 			}
 
+
 			for (long flowid : observedLossyFlows.keySet()){
 				//System.out.println("hello");
 				//System.out.println(FlowDataParser.convertLongToAddress(flowid));
 				if (!expectedLossyFlows.contains(flowid)){
+					//System.out.println(FlowDataParser.convertLongToAddress(flowid));
 					numberOfFalsePositives++;
 				}
 				if (lostFlowSizes.get(flowid) == null)
 					System.out.println(FlowDataParser.convertLongToAddress(flowid));
+				//System.out.print(observedLossyFlows.get(flowid));
+				//System.out.print(" flowid=" + flowid + " " + lostFlowSizes.get(flowid));
+				/*if (!expectedLossyFlows.contains(flowid) && observedLossyFlows.get(flowid) > lostFlowSizes.get(flowid)){
+					System.out.println(flowid + " " + observedLossyFlows.get(flowid) + " " + lostFlowSizes.get(flowid));
+				}*/
+
 				deviation += Math.abs(observedLossyFlows.get(flowid) - lostFlowSizes.get(flowid));
 				denominator += lostFlowSizes.get(flowid);
 			}
@@ -117,7 +134,7 @@ public class LossyFlowIdentifier{
 		System.out.print((double) numberOfFalsePositives/numberOfTrials/observedLossyFlows.size() + ",");
 		System.out.print((double) numberOfFalseNegatives/numberOfTrials/expectedLossyFlows.size() + ",");
 		System.out.print(expectedLossyFlows.size() + "," + observedLossyFlows.size() + "," + (double) bigLoserPacketReported/bigLoserPacketCount);
-		System.out.println("," + cumDeviation/numberOfTrials);
+		System.out.println("," + cumDeviation/numberOfTrials + "," + occupiedSlots/tableSize/numberOfTrials);
 
 	}
 	public static void main(String[] args){
@@ -174,7 +191,7 @@ public class LossyFlowIdentifier{
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		final double threshold[] = {/*0.0035, 0.003, */0.002/*, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015*/};
 
-		System.out.println("tableSize" + "," + "threshold" + "," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation");
+		System.out.println("tableSize" + "," + "threshold" + "," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
 		for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 			for (int thr_index = 0; thr_index < threshold.length; thr_index++){
 
@@ -190,10 +207,15 @@ public class LossyFlowIdentifier{
 				//System.out.println(expectedLossyFlows.size() + " " + totalPacketsLost);
 
 			 	//System.out.println(totalPacketsLost + " " + count);
+
+			 	// run the loss identification trials for the appropriate heuristic
 				//runLossIdentificationTrials(SummaryStructureType.DLeft, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 				//runLossIdentificationTrials(SummaryStructureType.BasicHeuristic, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-				runLossIdentificationTrials(SummaryStructureType.EvictionWithoutCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+				//runLossIdentificationTrials(SummaryStructureType.MinReplacementHeuristic, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+				//runLossIdentificationTrials(SummaryStructureType.EvictionWithoutCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 				//runLossIdentificationTrials(SummaryStructureType.EvictionWithCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+				//runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+				runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 			}
 		}
 	}
