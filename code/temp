@@ -1,2 +1,0 @@
-tableSize,threshold,FalsePositive %,False Negative %,expected number, reported number, bigLoserReportedFraction, deviation, table occupancy
-250,0.002,0.0,0.2396694214876033,121,92,0.8940233524638829,0.009739900387382289,0.992
