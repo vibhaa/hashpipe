@@ -45,7 +45,7 @@ public class DLeftHashTable{
 
 			countMinSketch = new Sketch(tableSize/3, 3, numberOfFlows);
 		}
-		else if (type == SummaryStructureType.RollingMinWithBloomFilter || type == SummaryStructureType.RollingMinWihoutCoalescense){
+		else if (type == SummaryStructureType.RollingMinWithBloomFilter || type == SummaryStructureType.RollingMinWihoutCoalescense || type == SummaryStructureType.RollingMinSingleLookup){
 			buckets = new FlowWithCount[tableSize];
 
 			for (int j = 0; j < tableSize; j++){
@@ -171,27 +171,6 @@ public class DLeftHashTable{
 			int curKeyIndex = (int) ((hashA[k]*key + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
 			if (k == 0) firstLocation = index;
 			
-			if (type != SummaryStructureType.RollingMinWithBloomFilter && type != SummaryStructureType.RollingMinWihoutCoalescense){
-				// this flow has been seen before
-				if (buckets[index].flowid == key) {
-					buckets[index].count++;
-					break;
-				}
-
-				// new flow
-				if (buckets[index].flowid == 0) {
-					buckets[index].flowid = key;
-					buckets[index].count = 1;
-					break;
-				}
-
-				// track min - first time explicitly set the value
-				if (buckets[index].count < minValue || k == 0){
-					minValue = buckets[index].count;
-					minIndex = index;
-				}
-			}
-
 			if (type == SummaryStructureType.RollingMinWithBloomFilter || type == SummaryStructureType.RollingMinWihoutCoalescense){
 				//if (isNew){
 					//zeroing out, or coalescing multipe occurences of the same flow
@@ -317,6 +296,102 @@ public class DLeftHashTable{
 				}*/
 				if (!bloomfilter.contains(key))
 					bloomfilter.add(key);
+			}
+			else if (type == SummaryStructureType.RollingMinSingleLookup){
+					// new flow - this may have been zeroed out from the previous case, so idk how to handle that in hardware
+					if (buckets[index].flowid == 0 && k == 0) {
+						buckets[index].flowid = key;
+						buckets[index].count = 1;
+						break;
+					}
+					else if (buckets[index].flowid == 0 && k != 0) {
+						buckets[index].flowid = keyBeingCarried;
+						buckets[index].count = valueBeingCarried;
+						break;
+					}
+					else if (buckets[index].flowid == keyBeingCarried){ // coalesce the values
+						buckets[index].count += valueBeingCarried;
+						break; // hardware?
+					}
+
+					if (buckets[index].flowid == key && k == 0){ // updated value
+						buckets[index].count++;
+
+						/*if (buckets[index].flowid == 1110210987)
+								System.out.println("incrementing in table 0 trial#" + keynum + " value" + buckets[index].count);*/
+					}
+					else if (k == 0){
+						// place the new value here and carry the rest over
+						valueBeingCarried = buckets[index].count;
+						keyBeingCarried = buckets[index].flowid;
+
+						/*if (buckets[index].flowid == 1110210987 && key != 1110210987)
+								System.out.println("kicking out from first table trial#" + keynum + " value" + buckets[index].count);*/
+
+						buckets[index].flowid = key;
+						buckets[index].count = 1; // minValue + 1 insertion here ??
+
+						if (buckets[index].flowid == 0 && buckets[index].count != 0){
+							System.out.println("inconsistency case 3");
+						}
+
+						/*if (buckets[index].flowid == 1110210987)
+								System.out.println("inserting in table1 trial #" + keynum + " value" + buckets[index].count);*/
+
+						//System.out.println("index = " + index + " " + buckets[index].flowid + " " + buckets[index].count);
+					}
+					else if (buckets[index].count < valueBeingCarried){
+					// swap out key being carried for value in this location
+						/*if (buckets[index].flowid == 1110210987 && keyBeingCarried != 1110210987)
+								System.out.println("kicking out from first table " + k + " trial#" + keynum + " value" + buckets[index].count);*/
+
+						long temp = valueBeingCarried;
+						valueBeingCarried = buckets[index].count;
+						buckets[index].count = temp;
+
+						temp = keyBeingCarried;
+						keyBeingCarried = buckets[index].flowid;
+						buckets[index].flowid = temp;
+
+						/*if (buckets[index].flowid == 1110210987)
+								System.out.println("inserting in table " + k + " trial #" + keynum + " value" + buckets[index].count);*/
+
+						if (buckets[index].flowid == 0 && buckets[index].count != 0){
+							System.out.println("inconsistency case 4");
+						}
+					}
+
+					
+					
+				/*}
+				else{
+					// TODO: more cases here since false positives are possible
+					if (buckets[index].flowid == key){
+						buckets[index].count++;
+					}
+				}*/
+				if (!bloomfilter.contains(key))
+					bloomfilter.add(key);
+			}
+			else{
+				// this flow has been seen before
+				if (buckets[index].flowid == key) {
+					buckets[index].count++;
+					break;
+				}
+
+				// new flow
+				if (buckets[index].flowid == 0) {
+					buckets[index].flowid = key;
+					buckets[index].count = 1;
+					break;
+				}
+
+				// track min - first time explicitly set the value
+				if (buckets[index].count < minValue || k == 0){
+					minValue = buckets[index].count;
+					minIndex = index;
+				}
 			}
 		}
 

@@ -215,7 +215,8 @@ public class LossyFlowIdentifier{
 				//runLossIdentificationTrials(SummaryStructureType.EvictionWithoutCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 				//runLossIdentificationTrials(SummaryStructureType.EvictionWithCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 				//runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-				runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+				//runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+				runLossIdentificationTrials(SummaryStructureType.RollingMinSingleLookup, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 			}
 		}
 	}
