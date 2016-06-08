@@ -1,1 +1,1 @@
-public enum SummaryStructureType{ DLeft, BasicHeuristic, EvictionWithCount, EvictionWithoutCount, MinReplacementHeuristic, RollingMinWithBloomFilter, RollingMinWihoutCoalescense, RollingMinSingleLookup};
+public enum SummaryStructureType{ DLeft, BasicHeuristic, EvictionWithCount, EvictionWithoutCount, MinReplacementHeuristic, RollingMinWithBloomFilter, RollingMinWihoutCoalescense, RollingMinSingleLookup, OverallMinReplacement};

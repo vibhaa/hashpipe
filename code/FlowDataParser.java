@@ -74,4 +74,50 @@ public class FlowDataParser{
 			return null;
 		}
 	}
+
+	public static ArrayList<Packet> parseCAIDAPacketData(String filename){
+		ArrayList<Packet> packetStream = new ArrayList<Packet>();
+		File file = new File(filename);
+		try
+		{
+			Scanner scanner = new Scanner(file);
+			int linenumber = 0;
+			String line = scanner.nextLine(); // skip first line
+			String[] fields = new String[24];
+			while (scanner.hasNextLine())
+			{
+				line = scanner.nextLine();
+				/*if (linenumber++ == 0)
+					continue;*/
+
+				fields = line.split(",");
+				if (fields.length < 5)
+					continue;
+
+				String srcipString = fields[0];
+				long srcip = convertAddressToLong(srcipString);
+
+				String dstipString = fields[1];
+				long dstip = convertAddressToLong(dstipString);
+
+				String srcPort = fields[3];
+				String dstPort = fields[4];
+				String protocol = fields[2];
+
+				if (srcipString.length() == 0 || dstipString.length() == 0 || protocol.length() == 0 || srcPort.length() == 0 || dstPort.length() == 0)
+					continue;
+
+				Packet p = new Packet(srcip, dstip, srcPort, dstPort, protocol);
+				packetStream.add(p);
+			}
+			scanner.close();
+			return packetStream;
+		}
+		catch (FileNotFoundException e)
+		{
+			System.err.format("Exception occurred trying to read '%s'.", filename);
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

@@ -12,6 +12,7 @@ public class FindFlowSize{
 			String line;
 			int linenumber = 0;
 			String[] fields = new String[24];
+			int value = 1;
 			while (scanner.hasNextLine())
 			{
 				line = scanner.nextLine();
@@ -20,13 +21,26 @@ public class FindFlowSize{
 
 				fields = line.split(",");
 
-				String srcipString = fields[3];
+				if (fields.length < 5)
+					continue;
+
+				String srcipString = fields[0]; // caida default
+				if (!filename.contains("caida")){
+					srcipString = fields[3];
+				}
+
+				if (srcipString.length() == 0)
+					continue;
 
 				if (flowsToBeTracked.contains(srcipString)){
+					if (!filename.contains("caida")){
+						value = Integer.parseInt(fields[11]);
+					}
+
 					if (tracker.containsKey(srcipString))
-						tracker.put(srcipString, tracker.get(srcipString) + Integer.parseInt(fields[11]));
+						tracker.put(srcipString, tracker.get(srcipString) + value);
 					else
-						tracker.put(srcipString, Integer.parseInt(fields[11]));
+						tracker.put(srcipString, value);
 				}
 				
 			}

@@ -19,13 +19,12 @@ public class DLeftHashTable{
 	private SummaryStructureType type;
 	private final int D;
 
-	public DLeftHashTable(int tableSize, SummaryStructureType type, int numberOfFlows){
+	public DLeftHashTable(int tableSize, SummaryStructureType type, int numberOfFlows, int D){
 		this.tableSize = tableSize;
-
+		this.D = D;
 		droppedPacketInfoCount = 0;
 		cumDroppedPacketInfoCount = 0;
 		totalNumberOfPackets = 0;
-		D = 4;
 
 		this.type = type;
 
@@ -75,9 +74,9 @@ public class DLeftHashTable{
 
 	public void processDataWithoutCountInTable(long key){
 		// hardcoded values for the hash functions given that the number of flows is 100
-		final int P = 1019;
-		final int hashA[] = {421, 149, 311, 701};
-		final int hashB[] = {73, 109, 233, 31};
+		final int P = 5171;
+		final int hashA[] = {421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
+		final int hashB[] = {73, 109, 233, 31, 151, 3359, 643, 1103, 2927, 3061, 409, 3079, 2341, 179, 1213};
 
 		totalNumberOfPackets++;
 
@@ -133,9 +132,9 @@ public class DLeftHashTable{
 
 	public void processDataWithCountInTable(long key, int keynum){
 		// hardcoded values for the hash functions given that the number of flows is 100
-		final int P = 1019;
-		final int hashA[] = {421, 149, 311, 701};
-		final int hashB[] = {73, 109, 233, 31};
+		final int P = 5171;
+		final int hashA[] = {421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
+		final int hashB[] = {73, 109, 233, 31, 151, 3359, 643, 1103, 2927, 3061, 409, 3079, 2341, 179, 1213};
 
 		totalNumberOfPackets++;
 
@@ -163,6 +162,27 @@ public class DLeftHashTable{
 		if (key == 0)
 		{
 			System.out.print("invalid Key");
+			return;
+		}
+
+		if (type == SummaryStructureType.OverallMinReplacement){
+			minIndex = 0;
+			minValue = buckets[0].count;
+
+			for (k = 0; k < buckets.length; k++){
+				if (buckets[k].flowid == key){
+					buckets[k].count++;
+					return;
+				}
+
+				if (buckets[k].count < minValue){
+					minIndex = k;
+					minValue = buckets[k].count;
+				}
+			}
+
+			buckets[minIndex].flowid = key;
+			buckets[minIndex].count = 1;
 			return;
 		}
 
@@ -297,6 +317,7 @@ public class DLeftHashTable{
 				if (!bloomfilter.contains(key))
 					bloomfilter.add(key);
 			}
+			
 			else if (type == SummaryStructureType.RollingMinSingleLookup){
 					// new flow - this may have been zeroed out from the previous case, so idk how to handle that in hardware
 					if (buckets[index].flowid == 0 && k == 0) {
@@ -319,6 +340,7 @@ public class DLeftHashTable{
 
 						/*if (buckets[index].flowid == 1110210987)
 								System.out.println("incrementing in table 0 trial#" + keynum + " value" + buckets[index].count);*/
+						break;
 					}
 					else if (k == 0){
 						// place the new value here and carry the rest over
