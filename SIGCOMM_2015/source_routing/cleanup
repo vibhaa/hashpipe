@@ -1,0 +1,2 @@
+sudo killall simple_switch
+redis-cli FLUSHDB
