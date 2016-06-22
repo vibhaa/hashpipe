@@ -199,10 +199,11 @@ public class LossyFlowIdentifier{
 		float duplicates = 0;
 
 		double cumDeviation = 0;
-		ArrayList<HashMap<Long, Long>> listOfobservedLossyFlows = new ArrayList<HashMap<Long, Long>>();
-		ArrayList<HashMap<Long, ArrayList<Double>>> listOfobservedDeviation = new ArrayList<HashMap<Long, ArrayList<Double>>>();
+		//ArrayList<HashMap<Long, Long>> listOfobservedLossyFlows = new ArrayList<HashMap<Long, Long>>();
+		//ArrayList<HashMap<Long, ArrayList<Double>>> listOfobservedDeviation = new ArrayList<HashMap<Long, ArrayList<Double>>>();
 		double deviation;
-		for (int D = 3; D <= 15; D+=2){
+		int D = 2;
+		//for (int D = 3; D <= 15; D+=2){
 			HashMap<Long, Long> observedLossyFlows = new HashMap<Long, Long>();
 			HashMap<Long, ArrayList<Double>> observedDeviation = new HashMap<Long, ArrayList<Double>>();
 			HashMap<Long, Long> observedLossyFlowProb = new HashMap<Long, Long>();
@@ -273,26 +274,26 @@ public class LossyFlowIdentifier{
 					}
 				}
 			}
-			listOfobservedLossyFlows.add(observedLossyFlows);
-			listOfobservedDeviation.add(observedDeviation);
-		}
+			//listOfobservedLossyFlows.add(observedLossyFlows);
+			//listOfobservedDeviation.add(observedDeviation);
+		//}
 
 		for (long flowid : lostFlowSizes.keySet()){
 			// what do i do about expected lost flows not in the observed lossy flows?
 			//if (!expectedLossyFlows.contains(flowid)){
 				//}
 			System.out.print(lostFlowSizes.get(flowid) + ",");
-			for (int D = 3; D <= 15; D+=2){
-				if (listOfobservedLossyFlows.get(D - 3).containsKey(flowid)){
-					System.out.print(listOfobservedLossyFlows.get(D - 3).get(flowid)/(float) numberOfTrials /*+ "," + observedLossyFlowProb.get(flowid)/(float) numberOfTrials*/);
+			//for (int D = 3; D <= 15; D+=2){
+				if (observedLossyFlows.containsKey(flowid)){
+					System.out.print(observedLossyFlows.get(flowid)/(float) numberOfTrials + "," /*+ observedLossyFlowProb.get(flowid)/(float) numberOfTrials*/);
 					double total = 0;
-					for (double d : listOfobservedDeviation.get(D - 3).get(flowid))
+					for (double d : observedDeviation.get(flowid))
 						total += d;
-					System.out.print("," + total/listOfobservedDeviation.get(D - 3).get(flowid).size() + ",");
+					System.out.print(total/observedDeviation.get(flowid).size() + ",");
 				}
 				else
 					System.out.print("0, 1,");
-			}
+			//}
 			System.out.println();
 		}
 		//System.out.println("Table Occupancy: " + occupiedSlots/tableSize/numberOfTrials);
@@ -354,9 +355,9 @@ public class LossyFlowIdentifier{
 		//Sketch lostPacketSketch = new Sketch(K, H, lostPacketStream.size());
 		
 		//final int tableSize[] = {30, 75, 150, 300, 500, 900, 1200, 1500, 2000};
-		final int tableSize[] = {2048/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800*/};
+		final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2048,*/1024, 4096, 8192};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
-		final double threshold[] = {0.002, 0.0015, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
+		final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
 
 		if (args[2].equals("runTrial"))	{
 			System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");

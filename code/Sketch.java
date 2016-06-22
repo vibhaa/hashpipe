@@ -140,7 +140,7 @@ public class Sketch{
 
 	// query an estimate for the loss of this flow identified by its flow id
 	// using the count-min approach
-	public long estimateLossCount(long flowid){
+	public long estimateCount(long flowid){
 		long min = hashMatrix[0][hash(flowid, 0)];
 		for (int i = 1; i < numberOfHashFunctions; i++){
 			int hashbucket = hash(flowid, i);
