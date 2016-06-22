@@ -31,12 +31,11 @@ CLI_PATH=$BMV2_PATH/tools/runtime_CLI.py
 set -m
 $P4C_BM_SCRIPT p4src/simple_router.p4 --json simple_router.json
 sudo echo "sudo" > /dev/null
-sudo $BMV2_PATH/targets/simple_switch/simple_switch simple_router.json \
-   -i 0@veth0 -i 1@veth2 -i 2@veth4 -i 3@veth6 -i 4@veth8 \
-    --nanolog ipc:///tmp/bm-0-log.ipc --log-console \
+sudo $BMV2_PATH/targets/simple_switch/simple_switch --log-console simple_router.json \
+    -i 0@veth0 -i 1@veth2 -i 2@veth4 -i 3@veth6 -i 4@veth8 \
+    --nanolog ipc:///tmp/bm-0-log.ipc \
     --pcap &
 sleep 2
 $CLI_PATH --json simple_router.json < commands.txt
 echo "READY!!!"
 fg
-
