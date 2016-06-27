@@ -87,8 +87,8 @@ public class FlowDataParser{
 			while (scanner.hasNextLine())
 			{
 				line = scanner.nextLine();
-				/*if (linenumber++ == 0)
-					continue;*/
+				if (linenumber++ == 0)
+					continue;
 
 				fields = line.split(",");
 				if (fields.length < 5)

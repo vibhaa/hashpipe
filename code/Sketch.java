@@ -23,9 +23,9 @@ public class Sketch{
 
 	// a and b to compute the hashFunctions needed, every ith index in the hashSeedA and hashSeedB arrays are
 	//used to form a linear combination to get a hashfunction of the form ((ax + b) %p) %size
-	private final long[] hashSeedA;
-	private long[] hashSeedB;
-	private final long p;
+	private final int[] hashSeedA;
+	private final int[] hashSeedB;
+	private final int p;
 
 	public Sketch(int size, int numberOfHashFunctions, int totalNumberOfKeys){
 		this.size = size;
@@ -35,11 +35,14 @@ public class Sketch{
 		hashMatrix = new long[numberOfHashFunctions][size];
 		this.totalNumberOfPackets = 0;
 
-		this.p = 1019L;
-
+		this.p = 5171;
+		int hashA[] = {  421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
+		this.hashSeedA = hashA;
+		int hashB[] = {  73, 109, 233, 31, 151, 3359, 643, 1103, 2927, 3061, 409, 3079, 2341, 179, 1213};
+		this.hashSeedB = hashB;
 		// a and b to compute the hashFunctions needed, every ith index in the hashSeedA and hashSeedB arrays are
 		//used to form a linear combination to get a hashfunction of the form ((ax + b) %p) %size
-		long[] hashSeedA = { 421, 149, 151, 59032440799460394L,
+		/*long[] hashSeedA = { 421, 149, 151, 59032440799460394L,
 		      1380096083914250750L,
 		      9216393848249138261L,
 		      1829347879307711444L,
@@ -53,7 +56,7 @@ public class Sketch{
 		      1106582827276932161L,
 		      7850759173320174309L,
 		      8297516128533878091L};
-		this.hashSeedB = hashSeedB;
+		this.hashSeedB = hashSeedB;*/
 	}
 
 	public int getSize(){
@@ -156,5 +159,16 @@ public class Sketch{
 			for (int j = 0; j < size; j++)
 				hashMatrix[i][j] = 0;
 		}
+	}
+
+	// get the occupancy - number of occupied slots in the cm sketch as a fraction of total slots
+	public double getOccupancy(){
+		double occupiedSlots = 0;
+		for (int i = 0; i < numberOfHashFunctions; i++){
+			for (int j = 0; j < size; j++)
+				if (hashMatrix[i][j] != 0)
+					occupiedSlots++;
+		}
+		return occupiedSlots/(numberOfHashFunctions*size);
 	}
 } 

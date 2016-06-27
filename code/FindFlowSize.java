@@ -3,7 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 public class FindFlowSize{
-	public static HashMap<String, Integer> trackPacketData(String filename, HashSet<String> flowsToBeTracked){
+	public static HashMap<String, Integer> trackPacketData(String filename){
 		HashMap<String, Integer> tracker = new HashMap<String, Integer>();
 		File file = new File(filename);
 		try
@@ -16,8 +16,8 @@ public class FindFlowSize{
 			while (scanner.hasNextLine())
 			{
 				line = scanner.nextLine();
-				/*if (linenumber++ == 0)
-					continue;*/
+				if (linenumber++ == 0)
+					continue;
 
 				fields = line.split(",");
 
@@ -25,15 +25,15 @@ public class FindFlowSize{
 					continue;
 
 				String srcipString = fields[0]; // caida default
-				if (!filename.contains("caida")){
+				if (!filename.contains("Caida")){
 					srcipString = fields[3];
 				}
 
 				if (srcipString.length() == 0)
 					continue;
 
-				if (flowsToBeTracked.contains(srcipString)){
-					if (!filename.contains("caida")){
+				if (true){
+					if (!filename.contains("Caida")){
 						value = Integer.parseInt(fields[11]);
 					}
 
@@ -59,7 +59,7 @@ public class FindFlowSize{
 		// read the flows to be lost from a file mentioned in the command line and create a new stream with that flow lost
 		HashSet<String> flowsToBeTracked = new HashSet<String>();
 		ArrayList<String> flows = new ArrayList<String>();
-		File file = new File(args[1]);
+		/*File file = new File(args[1]);
 		try
 		{
 			Scanner scanner = new Scanner(file);
@@ -79,11 +79,11 @@ public class FindFlowSize{
 			System.err.format("Exception occurred trying to read '%s'.", args[1]);
 			e.printStackTrace();
 			return;
-		}
+		}*/
 
-		HashMap<String, Integer> tracker = trackPacketData(args[0], flowsToBeTracked);
+		HashMap<String, Integer> tracker = trackPacketData(args[0]);
 
-		for (String s : flows)
+		for (String s : tracker.keySet())
 			System.out.println(s + "," + tracker.get(s) + ",");
 	}
 }
