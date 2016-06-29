@@ -1,5 +1,6 @@
 table_set_default drop_expired do_drop_expired
 table_set_default track_stage1 do_stage1
+table_set_default track_stage2 do_stage2
 table_set_default send_frame _drop
 table_set_default forward _drop
 table_set_default ipv4_lpm _drop
