@@ -20,8 +20,21 @@ source $THIS_DIR/../env.sh
 
 CLI_PATH=$BMV2_PATH/targets/simple_switch/sswitch_CLI
 
+if [ $# -lt 1 ]; then
+    echo "Please specify register index"
+    exit 1
+fi
+index=$1
+
 echo "register_read drops_register 0" | $CLI_PATH simple_router.json
 
-echo "register_read packet_counter_stage1 898" | $CLI_PATH simple_router.json
+echo "register_read flow_tracker_stage1 0" | $CLI_PATH simple_router.json
+echo "register_read flow_tracker_stage2 0" | $CLI_PATH simple_router.json
 
-echo "register_read flow_tracker_stage1 898" | $CLI_PATH simple_router.json
+echo "register_read packet_counter_stage1 $index" | $CLI_PATH simple_router.json
+
+echo "register_read flow_tracker_stage1 $index" | $CLI_PATH simple_router.json
+
+echo "register_read packet_counter_stage2 $index" | $CLI_PATH simple_router.json
+
+echo "register_read flow_tracker_stage2 $index" | $CLI_PATH simple_router.json
