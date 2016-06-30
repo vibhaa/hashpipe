@@ -11,5 +11,6 @@ public enum SummaryStructureType{
 	CountMinCacheNoKeys,
 	CountMinCacheNoKeysReportedBit,
 	CountMinCacheWithKeys,
-	GroupCounters
+	GroupCounters,
+	AsymmetricDleftSingleLookUp
 };

@@ -47,11 +47,7 @@ public class CountMinWithCache{
 			reportedToController = new boolean[cacheSize];
 	}
 
-	public void processData(long key){
-		processDataWithoutCountInTable(key);
-	}
-
-	public void processDataWithoutCountInTable(long key){
+	public void processData(long key, long thr_totalPackets){
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 5171;
 		final int hashA[] = {  421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
@@ -64,7 +60,7 @@ public class CountMinWithCache{
 		// there is no going back to previously updated stages involved
 		countMinSketch.updateCount(key);
 
-		if (countMinSketch.estimateCount(key) > threshold1 * totalNumberOfPackets){
+		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCount(key) > threshold1 * totalNumberOfPackets){
 			/* hash to find index in cache and update*/
 			int curKeyIndex = (int) ((hashA[0]*key + hashB[0]) % P) % (cacheSize);
 

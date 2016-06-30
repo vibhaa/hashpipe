@@ -44,7 +44,7 @@ public class DLeftHashTable{
 
 			countMinSketch = new Sketch(tableSize/3, 3, numberOfFlows);
 		}
-		else if (type == SummaryStructureType.RollingMinWithBloomFilter || type == SummaryStructureType.RollingMinWihoutCoalescense || type == SummaryStructureType.RollingMinSingleLookup){
+		else if (type == SummaryStructureType.RollingMinWithBloomFilter || type == SummaryStructureType.RollingMinWihoutCoalescense || type == SummaryStructureType.RollingMinSingleLookup || type == SummaryStructureType.AsymmetricDleftSingleLookUp){
 			buckets = new FlowWithCount[tableSize];
 
 			for (int j = 0; j < tableSize; j++){
@@ -243,6 +243,18 @@ public class DLeftHashTable{
 		for (k = 0; k < D; k++){
 			int index = (int) ((hashA[k]*keyBeingCarried + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
 			int curKeyIndex = (int) ((hashA[k]*key + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
+
+			if (type == SummaryStructureType.AsymmetricDleftSingleLookUp){
+				/*int[] size = {294*tableSize/1024, 267*tableSize/1024, 243*tableSize/1024, 220*tableSize/1024};
+				int[] cumSize = {0, 294*tableSize/1024, 561*tableSize/1024, 804*tableSize/1024};*/
+
+				int[] size = {213*tableSize/1024, 194*tableSize/1024, 177*tableSize/1024, 161*tableSize/1024, 146*tableSize/1024, 133*tableSize/1024};
+				int[] cumSize = {0, 213*tableSize/1024, 407*tableSize/1024, 584*tableSize/1024, 745*tableSize/1024, 891*tableSize/1024};
+
+				index = (int) ((hashA[k]*keyBeingCarried + hashB[k]) % P) % (size[k]) + (cumSize[k]);
+				curKeyIndex = (int) ((hashA[k]*key + hashB[k]) % P) % (size[k]) + (cumSize[k]);
+			}
+
 			if (k == 0) firstLocation = index;
 			
 			if (type == SummaryStructureType.RollingMinWithBloomFilter || type == SummaryStructureType.RollingMinWihoutCoalescense){
@@ -372,7 +384,7 @@ public class DLeftHashTable{
 					bloomfilter.add(key);
 			}
 			
-			else if (type == SummaryStructureType.RollingMinSingleLookup){
+			else if (type == SummaryStructureType.RollingMinSingleLookup || type == SummaryStructureType.AsymmetricDleftSingleLookUp){
 					// new flow - this may have been zeroed out from the previous case, so idk how to handle that in hardware
 					if (buckets[index].flowid == 0 && k == 0) {
 						buckets[index].flowid = key;

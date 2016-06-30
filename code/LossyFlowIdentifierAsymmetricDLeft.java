@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
    initially written for the sketches to all be reversible so that the 
    reversibility procedure would identify the lossy buckets - unused 
    code in the context of the hash table approach*/
-public class LossyFlowIdentifier{
+public class LossyFlowIdentifierAsymmetricDLeft{
 	private static HashSet<Long> expectedHH;
 	private static HashMap<Long, Integer> flowSizes;
 	private static ArrayList<String> flowsToBeLost;
@@ -99,7 +99,7 @@ public class LossyFlowIdentifier{
 						}
 					}
 				}
-				else if (type == SummaryStructureType.RollingMinSingleLookup){
+				else if (type == SummaryStructureType.RollingMinSingleLookup || type == SummaryStructureType.AsymmetricDleftSingleLookUp){
 					HashMap<Long, Long> currentFlows = new HashMap<Long, Long>();
 					for (FlowWithCount f : lostFlowHashTable.getBuckets()){
 						if (f.flowid != 0)
@@ -140,13 +140,12 @@ public class LossyFlowIdentifier{
 							currentFlows.put(f.flowid, f.count);
 						//System.out.println(f.flowid);
 					}
-					int tracker = 0;
-					long[] totalCounter = gcHashTable.getTotalCounter();
+
 					for (FlowWithCount f : gcHashTable.getBuckets()){
 						//System.out.println(f.flowid + " " + f.count); 
 
 						// give it benefit of doubt?
-						if (totalCounter[tracker++] > threshold[thr_index]*lostPacketStream.size()){
+						if (2*f.count > threshold[thr_index]*lostPacketStream.size()){
 							observedHH.put(f.flowid, f.count);
 						//System.out.println(f.flowid);
 						}
@@ -282,7 +281,7 @@ public class LossyFlowIdentifier{
 							occupiedSlots++;
 
 					if (currentLossyFlows.containsKey(f.flowid)){ // coalesce multiple values
-						if (type == SummaryStructureType.RollingMinSingleLookup)
+						if (type == SummaryStructureType.RollingMinSingleLookup || type == SummaryStructureType.AsymmetricDleftSingleLookUp)
 							currentLossyFlows.put(f.flowid, currentLossyFlows.get(f.flowid) + f.count);
 						else
 							currentLossyFlows.put(f.flowid, f.count);
@@ -391,7 +390,15 @@ public class LossyFlowIdentifier{
 					cmsketch.processData(p.getSrcIp(), thr_totalPackets);
 				}
 
-				// get the heavy hitters from a dump of the cache and track them separately
+				observedHH = cmsketch.getHeavyHitters();
+				observedSize[thr_index] = observedHH.size();
+				occupancy[thr_index] += (float) cmsketch.getSketch().getOccupancy();
+			
+				int bigLoserPacketsLost = 0;
+				int flag = 0;
+				double deviation = 0;
+				double denominator = 0;
+
 				if (type == SummaryStructureType.CountMinCacheWithKeys){
 					for (FlowWithCount f : cmsketch.getCache()){
 						//System.out.println(f.flowid + " " + f.count); 
@@ -402,30 +409,6 @@ public class LossyFlowIdentifier{
 					}
 				}
 				observedSizeFromDump[thr_index] = observedHHfromDump.size();
-
-				//get the heavy hitters and clean them up
-				observedHH = cmsketch.getHeavyHitters();
-				ArrayList<Long> flowsToRemove = new ArrayList<Long>();
-				for (long flowid : observedHH.keySet()) {
-					if (type == SummaryStructureType.CountMinCacheNoKeys && observedHH.get(flowid) < threshold[thr_index]*lostPacketStream.size())
-						flowsToRemove.add(flowid);
-					if (type == SummaryStructureType.CountMinCacheWithKeys && observedHH.get(flowid) < threshold[thr_index]*lostPacketStream.size()){
-						// check if the cache has a mre updated value that would account for this particular flowid being a hh
-						// you would technically hash on this flowid and look up that index -- eliminated that part
-						if (!observedHHfromDump.containsKey(flowid))
-							flowsToRemove.remove(flowid);
-					}
-				}
-				for (long flowid : flowsToRemove)
-					observedHH.remove(flowid);
-
-				observedSize[thr_index] = observedHH.size();
-				occupancy[thr_index] += (float) cmsketch.getSketch().getOccupancy();
-			
-				int bigLoserPacketsLost = 0;
-				int flag = 0;
-				double deviation = 0;
-				double denominator = 0;
 
 				for (long flowid : expectedHH){
 					if (!observedHH.containsKey(flowid)){
@@ -495,7 +478,7 @@ public class LossyFlowIdentifier{
 			System.out.print((double) numberOfFalsePositives[thr_index]/numberOfTrials/observedSize[thr_index] + ",");
 			System.out.print((double) numberOfFalseNegatives[thr_index]/numberOfTrials/expectedSize[thr_index] + ",");
 			System.out.print(expectedSize[thr_index] + "," + observedSize[thr_index] + "," + (double) hhPacketReported[thr_index]/hhPacketCount[thr_index]);
-			System.out.print("," + cumDeviation[thr_index]/numberOfTrials + "," + occupancy[thr_index]/numberOfTrials + "," + thr_totalPackets + ",");
+			System.out.print("," + cumDeviation[thr_index]/numberOfTrials + "," + occupancy[thr_index]/numberOfTrials + ",");
 
 			if (type == SummaryStructureType.CountMinCacheWithKeys){
 				System.out.print((double) numberOfFalsePositivesinDump[thr_index]/numberOfTrials/observedSizeFromDump[thr_index] + ",");
@@ -564,18 +547,21 @@ public class LossyFlowIdentifier{
 		//Sketch lostPacketSketch = new Sketch(K, H, lostPacketStream.size());
 		
 		//final int tableSize[] = {30, 75, 150, 300, 500, 900, 1200, 1500, 2000};
-		final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024,*/ 2048, 4096, 8192};
+		final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, */1024, 2048, 4096, 8192};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
-		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
-		final double threshold[] = {0.002, 0.0006, 0.003, 0.00015, 0.000075};
+		final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
+		//final double threshold[] = {0.002, 0.0006, 0.003, 0.00015, 0.000075};
 		//final int tableSize[] = {2520, 5040, 7560, 10080};
 
 		if (args[2].equals("runTrial"))	{
 			System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 				//for (int thr_index = 0; thr_index < threshold.length; thr_index++){
-					for (int D = 2; D <= 12; D++){
-						if (D == 11)
+					for (int D = 6; D <= 6; D++){
+						if ((D == 16 && (tableSize_index == 0 || tableSize_index == 2)) || D == 17)
+							continue;
+
+						if (args[3].contains("AsymmetricDleft") && D !=6)
 							continue;
 						// change the expected flows to be lost accordingly
 						// compare observed and expected lossy flows and compute the probability of erro
@@ -593,6 +579,8 @@ public class LossyFlowIdentifier{
 							runLossIdentificationTrials(SummaryStructureType.RollingMinSingleLookup , originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
 						else if (args[3].contains("coalesce"))
 							runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter , originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
+						else if (args[3].contains("AsymmetricDleft"))
+							runLossIdentificationTrials(SummaryStructureType.AsymmetricDleftSingleLookUp , originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
 						//runLossIdentificationTrials(SummaryStructureType.DLeft, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 						//runLossIdentificationTrials(SummaryStructureType.BasicHeuristic, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 						//runLossIdentificationTrials(SummaryStructureType.MinReplacementHeuristic, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
@@ -606,20 +594,19 @@ public class LossyFlowIdentifier{
 			}
 		}
 		else if (args[2].equals("countMin")){
-			System.out.print("totalMemory," + "cacheSize," + "threshold1," + "threshold2," + "D," + "FalsePositive %," + "False Negative %," + "expected number, reported number, hhReportedFraction, deviation, table occupancy, thr_totalPackets");
-			if (args[3].contains("Keys"))
-				System.out.print("FalsePositiveinDump %," + "False Negativ in Dump %," + "expected number, reported number in dump, hhReportedFraction in dump, deviation in dump,");
-			System.out.println();
-
+			System.out.print("totalMemory," + "cacheSize," + "threshold1," + "threshold2," + "D," + "FalsePositive %," + "False Negative %," + "expected number, reported number, hhReportedFraction, deviation, table occupancy,");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) {
-				//for (long thr_totalPackets = 100000; thr_totalPackets <= 500000; thr_totalPackets += 100000)
-				for (long thr_totalPackets = 0; thr_totalPackets <= 0; thr_totalPackets += 100000){
+				for (long thr_totalPackets = 10000; thr_totalPackets <= 50000; thr_totalPackets += 10000){
 					for (int D = 2; D <= 4; D++){
 						//System.out.println(expectedHH.size() + " " + totalPacketsLost);
 				 		//System.out.println(totalPacketsLost + " " + count);
 
 				 		// run the loss identification trials for the appropriate heuristic
-				 		if (args[3].contains("NoKeyNoRepBit"))
+				 		if (args[3].contains("Keys"))
+				 			System.out.print("FalsePositiveinDump %," + "False Negativ in Dump %," + "expected number, reported number in dump, hhReportedFraction in dump, deviation in dump,");
+				 		System.out.println();
+
+						if (args[3].contains("NoKeyNoRepBit"))
 							runTrialsOnSketch(SummaryStructureType.CountMinCacheNoKeys, lostPacketStream, threshold, tableSize[tableSize_index]*3, D, thr_totalPackets);
 						else if (args[3].contains("NoKeyRepBit"))
 							runTrialsOnSketch(SummaryStructureType.CountMinCacheNoKeysReportedBit, lostPacketStream, threshold, tableSize[tableSize_index]*3, D, thr_totalPackets);
@@ -630,7 +617,7 @@ public class LossyFlowIdentifier{
 			}
 		}
 		else if (args[2].equals("groupCounters")){
-			System.out.println("totalMemory," + "threshold," + "D," + "FalsePositive %," + "False Negative %," + "expected number, reported number, hhReportedFraction, deviation, table occupancy, duplicates,");
+			System.out.println("totalMemory," + "cacheSize," + "threshold1," + "threshold2," + "D," + "FalsePositive %," + "False Negative %," + "expected number, reported number, hhReportedFraction, deviation, table occupancy,");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 				runLossIdentificationTrials(SummaryStructureType.GroupCounters, originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index]*3, 1);
 			}
