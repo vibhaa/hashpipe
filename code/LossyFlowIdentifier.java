@@ -403,21 +403,26 @@ public class LossyFlowIdentifier{
 				}
 				observedSizeFromDump[thr_index] = observedHHfromDump.size();
 
+				
 				//get the heavy hitters and clean them up
 				observedHH = cmsketch.getHeavyHitters();
+				//System.out.print("Before cleaning:" + observedHH.size());
 				ArrayList<Long> flowsToRemove = new ArrayList<Long>();
 				for (long flowid : observedHH.keySet()) {
-					if (type == SummaryStructureType.CountMinCacheNoKeys && observedHH.get(flowid) < threshold[thr_index]*lostPacketStream.size())
+					if (type == SummaryStructureType.CountMinCacheNoKeys && observedHH.get(flowid) <= threshold[thr_index]*lostPacketStream.size())
 						flowsToRemove.add(flowid);
-					if (type == SummaryStructureType.CountMinCacheWithKeys && observedHH.get(flowid) < threshold[thr_index]*lostPacketStream.size()){
+					if (type == SummaryStructureType.CountMinCacheWithKeys && observedHH.get(flowid) <= threshold[thr_index]*lostPacketStream.size()){
 						// check if the cache has a mre updated value that would account for this particular flowid being a hh
 						// you would technically hash on this flowid and look up that index -- eliminated that part
 						if (!observedHHfromDump.containsKey(flowid))
-							flowsToRemove.remove(flowid);
+							flowsToRemove.add(flowid);
+						else if (observedHHfromDump.get(flowid) <= threshold[thr_index]*lostPacketStream.size())
+							flowsToRemove.add(flowid);
 					}
 				}
 				for (long flowid : flowsToRemove)
 					observedHH.remove(flowid);
+				//System.out.println("after cleaning: " + observedHH.size());
 
 				observedSize[thr_index] = observedHH.size();
 				occupancy[thr_index] += (float) cmsketch.getSketch().getOccupancy();
@@ -564,10 +569,10 @@ public class LossyFlowIdentifier{
 		//Sketch lostPacketSketch = new Sketch(K, H, lostPacketStream.size());
 		
 		//final int tableSize[] = {30, 75, 150, 300, 500, 900, 1200, 1500, 2000};
-		final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024,*/ 2048, 4096, 8192};
+		final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024, */2048, 4096, 8192};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
-		final double threshold[] = {0.002, 0.0006, 0.003, 0.00015, 0.000075};
+		final double threshold[] = {0.003, 0.002, 0.0006, 0.0004};
 		//final int tableSize[] = {2520, 5040, 7560, 10080};
 
 		if (args[2].equals("runTrial"))	{
