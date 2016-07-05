@@ -36,9 +36,9 @@ public class Sketch{
 		this.totalNumberOfPackets = 0;
 
 		this.p = 5171;
-		int hashA[] = {  421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
+		int hashA[] = {  701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453, 421, 149, 311};
 		this.hashSeedA = hashA;
-		int hashB[] = {  73, 109, 233, 31, 151, 3359, 643, 1103, 2927, 3061, 409, 3079, 2341, 179, 1213};
+		int hashB[] = {  31, 151, 3359, 643, 1103, 73, 109, 233, 2927, 3061, 409, 3079, 2341, 179, 1213};
 		this.hashSeedB = hashB;
 		// a and b to compute the hashFunctions needed, every ith index in the hashSeedA and hashSeedB arrays are
 		//used to form a linear combination to get a hashfunction of the form ((ax + b) %p) %size

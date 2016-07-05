@@ -22,6 +22,7 @@ public class CountMinWithCache{
 
 	private final double threshold1;
 	private final double threshold2;
+	private int controllerAction;
 
 	public CountMinWithCache(int totalMemory, SummaryStructureType type, int numberOfFlows, int D, int cacheSize, double threshold1, double threshold2){
 		this.tableSize = tableSize;
@@ -29,6 +30,7 @@ public class CountMinWithCache{
 		droppedPacketInfoCount = 0;
 		cumDroppedPacketInfoCount = 0;
 		totalNumberOfPackets = 0;
+		controllerAction = 0;
 
 		this.type = type;
 		this.cacheSize = cacheSize;
@@ -40,7 +42,10 @@ public class CountMinWithCache{
 			cache[j] = new FlowWithCount(0, 0);
 		}
 
-		countMinSketch = new Sketch((totalMemory - 3*cacheSize)/numHashFunctions, numHashFunctions, numberOfFlows);
+		if (type == SummaryStructureType.CountMinCacheNoKeys)
+			countMinSketch = new Sketch((totalMemory /*- cacheSize*/)/numHashFunctions, numHashFunctions, numberOfFlows);
+		else
+			countMinSketch = new Sketch((totalMemory - 3*cacheSize)/numHashFunctions, numHashFunctions, numberOfFlows);
 		heavyhitterList = new HashMap<Long, Long>();
 		
 		if (type == SummaryStructureType.CountMinCacheNoKeysReportedBit)
@@ -50,8 +55,8 @@ public class CountMinWithCache{
 	public void processData(long key, long thr_totalPackets){
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 5171;
-		final int hashA[] = {  421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
-		final int hashB[] = {  73, 109, 233, 31, 151, 3359, 643, 1103, 2927, 3061, 409, 3079, 2341, 179, 1213};
+		final int hashB[] = {  199, 2719, 2851, 1453};
+		final int hashA[] = {  3079, 2341, 179, 1213};
 
 		totalNumberOfPackets++;
 
@@ -61,6 +66,15 @@ public class CountMinWithCache{
 		countMinSketch.updateCount(key);
 
 		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCount(key) > threshold1 * totalNumberOfPackets){
+			if (type == SummaryStructureType.CountMinCacheNoKeys){
+					if (heavyhitterList.containsKey(key)){
+						heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					} else {
+						heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					}
+					controllerAction++;
+				}
+
 			/* hash to find index in cache and update*/
 			int curKeyIndex = (int) ((hashA[0]*key + hashB[0]) % P) % (cacheSize);
 
@@ -77,7 +91,8 @@ public class CountMinWithCache{
 			else
 				cache[curKeyIndex].count++;
 
-			if (cache[curKeyIndex].count > threshold2 *totalNumberOfPackets) {
+			// holding the count
+			if (false && (cache[curKeyIndex].count > threshold2 *totalNumberOfPackets || heavyhitterList.containsKey(key))) {
 				if (type == SummaryStructureType.CountMinCacheNoKeysReportedBit && !reportedToController[curKeyIndex]){
 					heavyhitterList.put(key, cache[curKeyIndex].count);
 					reportedToController[curKeyIndex] = true;
@@ -91,6 +106,7 @@ public class CountMinWithCache{
 					} else {
 						heavyhitterList.put(key, cache[curKeyIndex].count);
 					}
+					controllerAction++;
 				}
 			}
 		}
@@ -111,5 +127,9 @@ public class CountMinWithCache{
 
 	public Sketch getSketch(){
 		return countMinSketch;
+	}
+
+	public int getControllerReports(){
+		return controllerAction;
 	}	
 }
