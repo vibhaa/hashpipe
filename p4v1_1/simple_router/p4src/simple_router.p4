@@ -179,9 +179,9 @@ table send_frame {
 }
 
 control ingress {
+    apply(track_stage1);
+    apply(track_stage2);
     if(valid(ipv4)) {
-        apply(track_stage1);
-        apply(track_stage2);
         if(ipv4.ttl > 1) {
             apply(ipv4_lpm);
             apply(forward);

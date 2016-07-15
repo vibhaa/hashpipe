@@ -69,7 +69,7 @@
                     32
                 ],
                 [
-                    "mSwapSpace",
+                    "mDiff",
                     32
                 ],
                 [
@@ -296,8 +296,595 @@
     "meter_arrays": [],
     "actions": [
         {
-            "name": "_drop",
+            "name": "do_stage2",
             "id": 0,
+            "runtime_data": [],
+            "primitives": [
+                {
+                    "op": "modify_field_with_hash_based_offset",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mIndex"
+                            ]
+                        },
+                        {
+                            "type": "hexstr",
+                            "value": "0x0"
+                        },
+                        {
+                            "type": "calculation",
+                            "value": "stage2_hash"
+                        },
+                        {
+                            "type": "hexstr",
+                            "value": "0x400"
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "register",
+                            "value": [
+                                "flow_tracker_stage2",
+                                {
+                                    "type": "hexstr",
+                                    "value": "0x0"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mIndex"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mKeyInTable"
+                            ]
+                        },
+                        {
+                            "type": "register",
+                            "value": [
+                                "flow_tracker_stage2",
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "track_meta",
+                                        "mIndex"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mCountInTable"
+                            ]
+                        },
+                        {
+                            "type": "register",
+                            "value": [
+                                "packet_counter_stage2",
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "track_meta",
+                                        "mIndex"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mValid"
+                            ]
+                        },
+                        {
+                            "type": "register",
+                            "value": [
+                                "valid_bit_stage2",
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "track_meta",
+                                        "mIndex"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mKeyInTable"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "?",
+                                    "cond": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "==",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mValid"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            }
+                                        }
+                                    },
+                                    "left": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mKeyCarried"
+                                        ]
+                                    },
+                                    "right": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mKeyInTable"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mDiff"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "-",
+                                    "left": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mKeyInTable"
+                                        ]
+                                    },
+                                    "right": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mKeyCarried"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "register",
+                            "value": [
+                                "flow_tracker_stage2",
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "track_meta",
+                                        "mIndex"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "?",
+                                    "cond": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "==",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mDiff"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            }
+                                        }
+                                    },
+                                    "left": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mKeyInTable"
+                                        ]
+                                    },
+                                    "right": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "?",
+                                            "cond": {
+                                                "type": "expression",
+                                                "value": {
+                                                    "op": ">=",
+                                                    "left": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "track_meta",
+                                                            "mCountCarried"
+                                                        ]
+                                                    },
+                                                    "right": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "track_meta",
+                                                            "mCountInTable"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mKeyCarried"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mKeyInTable"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "register",
+                            "value": [
+                                "packet_counter_stage2",
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "track_meta",
+                                        "mIndex"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "?",
+                                    "cond": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "==",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mDiff"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            }
+                                        }
+                                    },
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "+",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mCountInTable"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mCountCarried"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "?",
+                                            "cond": {
+                                                "type": "expression",
+                                                "value": {
+                                                    "op": ">=",
+                                                    "left": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "track_meta",
+                                                            "mCountCarried"
+                                                        ]
+                                                    },
+                                                    "right": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "track_meta",
+                                                            "mCountInTable"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mCountCarried"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mCountInTable"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "register",
+                            "value": [
+                                "valid_bit_stage2",
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "track_meta",
+                                        "mIndex"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "?",
+                                    "cond": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "==",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mValid"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            }
+                                        }
+                                    },
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "?",
+                                            "cond": {
+                                                "type": "expression",
+                                                "value": {
+                                                    "op": "==",
+                                                    "left": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "track_meta",
+                                                            "mKeyCarried"
+                                                        ]
+                                                    },
+                                                    "right": {
+                                                        "type": "hexstr",
+                                                        "value": "0x0"
+                                                    }
+                                                }
+                                            },
+                                            "left": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x1"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "hexstr",
+                                        "value": "0x1"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mKeyCarried"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "?",
+                                    "cond": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "==",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mDiff"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            }
+                                        }
+                                    },
+                                    "left": {
+                                        "type": "hexstr",
+                                        "value": "0x0"
+                                    },
+                                    "right": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mKeyInTable"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "track_meta",
+                                "mCountCarried"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "?",
+                                    "cond": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "==",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "track_meta",
+                                                    "mDiff"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x0"
+                                            }
+                                        }
+                                    },
+                                    "left": {
+                                        "type": "hexstr",
+                                        "value": "0x0"
+                                    },
+                                    "right": {
+                                        "type": "field",
+                                        "value": [
+                                            "track_meta",
+                                            "mCountInTable"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "_drop",
+            "id": 1,
             "runtime_data": [],
             "primitives": [
                 {
@@ -308,7 +895,7 @@
         },
         {
             "name": "set_dmac",
-            "id": 1,
+            "id": 2,
             "runtime_data": [
                 {
                     "name": "dmac",
@@ -336,7 +923,7 @@
         },
         {
             "name": "do_stage1",
-            "id": 2,
+            "id": 3,
             "runtime_data": [],
             "primitives": [
                 {
@@ -554,7 +1141,7 @@
                             "type": "field",
                             "value": [
                                 "track_meta",
-                                "mSwapSpace"
+                                "mDiff"
                             ]
                         },
                         {
@@ -637,7 +1224,7 @@
                                                 "type": "field",
                                                 "value": [
                                                     "track_meta",
-                                                    "mSwapSpace"
+                                                    "mDiff"
                                                 ]
                                             },
                                             "right": {
@@ -718,7 +1305,7 @@
                                                 "type": "field",
                                                 "value": [
                                                     "track_meta",
-                                                    "mSwapSpace"
+                                                    "mDiff"
                                                 ]
                                             },
                                             "right": {
@@ -767,7 +1354,7 @@
                                                 "type": "field",
                                                 "value": [
                                                     "track_meta",
-                                                    "mSwapSpace"
+                                                    "mDiff"
                                                 ]
                                             },
                                             "right": {
@@ -795,8 +1382,36 @@
             ]
         },
         {
+            "name": "rewrite_mac",
+            "id": 4,
+            "runtime_data": [
+                {
+                    "name": "smac",
+                    "bitwidth": 48
+                }
+            ],
+            "primitives": [
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "ethernet",
+                                "srcAddr"
+                            ]
+                        },
+                        {
+                            "type": "runtime_data",
+                            "value": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "do_drop_expired",
-            "id": 3,
+            "id": 5,
             "runtime_data": [],
             "primitives": [
                 {
@@ -870,621 +1485,6 @@
                 {
                     "op": "drop",
                     "parameters": []
-                }
-            ]
-        },
-        {
-            "name": "do_stage2",
-            "id": 4,
-            "runtime_data": [],
-            "primitives": [
-                {
-                    "op": "modify_field_with_hash_based_offset",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mIndex"
-                            ]
-                        },
-                        {
-                            "type": "hexstr",
-                            "value": "0x0"
-                        },
-                        {
-                            "type": "calculation",
-                            "value": "stage2_hash"
-                        },
-                        {
-                            "type": "hexstr",
-                            "value": "0x400"
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "register",
-                            "value": [
-                                "flow_tracker_stage2",
-                                {
-                                    "type": "hexstr",
-                                    "value": "0x0"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mIndex"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mKeyInTable"
-                            ]
-                        },
-                        {
-                            "type": "register",
-                            "value": [
-                                "flow_tracker_stage2",
-                                {
-                                    "type": "field",
-                                    "value": [
-                                        "track_meta",
-                                        "mIndex"
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mCountInTable"
-                            ]
-                        },
-                        {
-                            "type": "register",
-                            "value": [
-                                "packet_counter_stage2",
-                                {
-                                    "type": "field",
-                                    "value": [
-                                        "track_meta",
-                                        "mIndex"
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mValid"
-                            ]
-                        },
-                        {
-                            "type": "register",
-                            "value": [
-                                "valid_bit_stage2",
-                                {
-                                    "type": "field",
-                                    "value": [
-                                        "track_meta",
-                                        "mIndex"
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mKeyInTable"
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "?",
-                                    "cond": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "==",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mValid"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            }
-                                        }
-                                    },
-                                    "left": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mKeyCarried"
-                                        ]
-                                    },
-                                    "right": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mKeyInTable"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mSwapSpace"
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "-",
-                                    "left": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mKeyInTable"
-                                        ]
-                                    },
-                                    "right": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mKeyCarried"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "register",
-                            "value": [
-                                "flow_tracker_stage2",
-                                {
-                                    "type": "field",
-                                    "value": [
-                                        "track_meta",
-                                        "mIndex"
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "?",
-                                    "cond": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "==",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mSwapSpace"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            }
-                                        }
-                                    },
-                                    "left": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mKeyInTable"
-                                        ]
-                                    },
-                                    "right": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "?",
-                                            "cond": {
-                                                "type": "expression",
-                                                "value": {
-                                                    "op": "<",
-                                                    "left": {
-                                                        "type": "field",
-                                                        "value": [
-                                                            "track_meta",
-                                                            "mCountInTable"
-                                                        ]
-                                                    },
-                                                    "right": {
-                                                        "type": "field",
-                                                        "value": [
-                                                            "track_meta",
-                                                            "mCountCarried"
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mKeyCarried"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mKeyInTable"
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "register",
-                            "value": [
-                                "packet_counter_stage2",
-                                {
-                                    "type": "field",
-                                    "value": [
-                                        "track_meta",
-                                        "mIndex"
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "?",
-                                    "cond": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "==",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mSwapSpace"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            }
-                                        }
-                                    },
-                                    "left": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "+",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mCountInTable"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mCountCarried"
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    "right": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "?",
-                                            "cond": {
-                                                "type": "expression",
-                                                "value": {
-                                                    "op": "<",
-                                                    "left": {
-                                                        "type": "field",
-                                                        "value": [
-                                                            "track_meta",
-                                                            "mCountInTable"
-                                                        ]
-                                                    },
-                                                    "right": {
-                                                        "type": "field",
-                                                        "value": [
-                                                            "track_meta",
-                                                            "mCountCarried"
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mCountCarried"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mCountInTable"
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "register",
-                            "value": [
-                                "valid_bit_stage2",
-                                {
-                                    "type": "field",
-                                    "value": [
-                                        "track_meta",
-                                        "mIndex"
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "?",
-                                    "cond": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "==",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mValid"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            }
-                                        }
-                                    },
-                                    "left": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "?",
-                                            "cond": {
-                                                "type": "expression",
-                                                "value": {
-                                                    "op": "==",
-                                                    "left": {
-                                                        "type": "field",
-                                                        "value": [
-                                                            "track_meta",
-                                                            "mKeyCarried"
-                                                        ]
-                                                    },
-                                                    "right": {
-                                                        "type": "hexstr",
-                                                        "value": "0x0"
-                                                    }
-                                                }
-                                            },
-                                            "left": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x1"
-                                            }
-                                        }
-                                    },
-                                    "right": {
-                                        "type": "hexstr",
-                                        "value": "0x1"
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mKeyCarried"
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "?",
-                                    "cond": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "==",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mSwapSpace"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            }
-                                        }
-                                    },
-                                    "left": {
-                                        "type": "hexstr",
-                                        "value": "0x0"
-                                    },
-                                    "right": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mKeyInTable"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "track_meta",
-                                "mCountCarried"
-                            ]
-                        },
-                        {
-                            "type": "expression",
-                            "value": {
-                                "type": "expression",
-                                "value": {
-                                    "op": "?",
-                                    "cond": {
-                                        "type": "expression",
-                                        "value": {
-                                            "op": "==",
-                                            "left": {
-                                                "type": "field",
-                                                "value": [
-                                                    "track_meta",
-                                                    "mSwapSpace"
-                                                ]
-                                            },
-                                            "right": {
-                                                "type": "hexstr",
-                                                "value": "0x0"
-                                            }
-                                        }
-                                    },
-                                    "left": {
-                                        "type": "hexstr",
-                                        "value": "0x0"
-                                    },
-                                    "right": {
-                                        "type": "field",
-                                        "value": [
-                                            "track_meta",
-                                            "mCountInTable"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "name": "rewrite_mac",
-            "id": 5,
-            "runtime_data": [
-                {
-                    "name": "smac",
-                    "bitwidth": 48
-                }
-            ],
-            "primitives": [
-                {
-                    "op": "modify_field",
-                    "parameters": [
-                        {
-                            "type": "field",
-                            "value": [
-                                "ethernet",
-                                "srcAddr"
-                            ]
-                        },
-                        {
-                            "type": "runtime_data",
-                            "value": 0
-                        }
-                    ]
                 }
             ]
         },
@@ -1573,7 +1573,7 @@
         {
             "name": "ingress",
             "id": 0,
-            "init_table": "_condition_0",
+            "init_table": "track_stage1",
             "tables": [
                 {
                     "name": "track_stage1",
@@ -1607,9 +1607,9 @@
                         "do_stage2"
                     ],
                     "next_tables": {
-                        "do_stage2": "_condition_1"
+                        "do_stage2": "_condition_0"
                     },
-                    "base_default_next": "_condition_1"
+                    "base_default_next": "_condition_0"
                 },
                 {
                     "name": "drop_expired",
@@ -1703,7 +1703,7 @@
                             }
                         }
                     },
-                    "true_next": "track_stage1",
+                    "true_next": "_condition_1",
                     "false_next": null
                 },
                 {
