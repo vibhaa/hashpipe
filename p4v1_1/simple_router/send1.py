@@ -22,19 +22,15 @@ import networkx as nx
 
 import sys
 
-mac = {'h1' : ("00:04:00:00:00:00", "00:aa:bb:00:00:00"), 'h2': ("00:04:00:00:00:01", "00:aa:bb:00:00:01")}
-ip = {'h1' : '10.0.0.10', 'h2': '10.0.1.10', 'h3': '4.1.0.10', 'h4' : '89.2.1.1'}
-
 def main():
     if len(sys.argv) != 1:
-        print "Usage: send.py"
+        print "Usage: send1.py"
         sys.exit(1)
 
     src, dst = 'h1', 'h2'
-    srcmac = mac[src][0]
-    dstmac = mac[src][1]
-    port = int(src.strip()[-1])
-    count = 0
+    srcmac = '00:aa:bb:00:00:00'
+    dstmac = '00:aa:bb:00:00:01'
+    port = 80
     
     p = Ether(src=srcmac, dst=dstmac, type=0x0800) / IP(src = '197.89.8.178', dst = '1.146.110.6') / msg
     sendp(p, iface = "veth0", verbose = 0)

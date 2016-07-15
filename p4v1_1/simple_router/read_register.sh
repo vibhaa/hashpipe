@@ -26,15 +26,16 @@ if [ $# -lt 1 ]; then
 fi
 index=$1
 
-echo "register_read drops_register 0" | $CLI_PATH simple_router.json
 
-echo "register_read flow_tracker_stage1 0" | $CLI_PATH simple_router.json
-echo "register_read flow_tracker_stage2 0" | $CLI_PATH simple_router.json
-
-echo "register_read packet_counter_stage1 $index" | $CLI_PATH simple_router.json
-
-echo "register_read flow_tracker_stage1 $index" | $CLI_PATH simple_router.json
-
-echo "register_read packet_counter_stage2 $index" | $CLI_PATH simple_router.json
-
-echo "register_read flow_tracker_stage2 $index" | $CLI_PATH simple_router.json
+for i in 'seq 0 31';
+do
+	echo 'register_read flow_tracker_stage1 $i' | $CLI_PATH simple_router.json
+	echo ','
+	echo 'register_read packet_counter_stage1 $i' | $CLI_PATH simple_router.json
+	echo ',,'
+	echo 'register_read flow_tracker_stage2 $i' | $CLI_PATH simple_router.json
+	echo ','
+	echo 'register_read packet_counter_stage2 $i' | $CLI_PATH simple_router.json
+	echo ',,'
+	echo '\n'
+done

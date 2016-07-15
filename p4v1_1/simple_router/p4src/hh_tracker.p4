@@ -61,7 +61,7 @@ action do_stage1(){
     modify_field_with_hash_based_offset(track_meta.mIndex, 0, stage1_hash,
     1024);
 
-    flow_tracker_stage1[0] = track_meta.mIndex;
+    //flow_tracker_stage1[0] = track_meta.mIndex;
 
     // read the key and value at that location
     track_meta.mKeyInTable = flow_tracker_stage1[track_meta.mIndex];
@@ -115,7 +115,7 @@ action do_stage2(){
     modify_field_with_hash_based_offset(track_meta.mIndex, 0, stage2_hash,
     1024);
 
-    flow_tracker_stage2[0] = track_meta.mIndex;
+    //flow_tracker_stage2[0] = track_meta.mIndex;
 
     // read the key and value at that location
     track_meta.mKeyInTable = flow_tracker_stage2[track_meta.mIndex];
