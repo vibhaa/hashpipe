@@ -507,6 +507,15 @@ public class DLeftHashTable{
 		return buckets;
 	}
 
+	public void printBuckets(){
+		int stageSize = tableSize/D;
+		for (int i = 0; i < stageSize; i++){
+			for (int j = 0; j < D; j++)
+				System.out.print(Long.toString(buckets[i + j*stageSize].flowid) + "," + buckets[i + j*stageSize].count +",,");
+			System.out.println();
+		}
+	}
+
 	public long[] getFlowIdBuckets(){
 		return flowIdBuckets;
 	}

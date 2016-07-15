@@ -75,6 +75,47 @@ public class FlowDataParser{
 		}
 	}
 
+	public static void printTestPackets(String filename){
+		File file = new File(filename);
+		try
+		{
+			Scanner scanner = new Scanner(file);
+			int linenumber = 0;
+			String line = scanner.nextLine(); // skip first line
+			String[] fields = new String[24];
+			while (scanner.hasNextLine())
+			{
+				line = scanner.nextLine();
+				if (linenumber++ == 0)
+					continue;
+
+				fields = line.split(",");
+				if (fields.length < 5)
+					continue;
+
+				String srcipString = fields[0];
+				String dstipString = fields[1];
+				String srcPort = fields[3];
+				String dstPort = fields[4];
+				String protocol = fields[2];
+
+				if (srcipString.length() == 0 || dstipString.length() == 0 || protocol.length() == 0 || srcPort.length() == 0 || dstPort.length() == 0)
+					continue;
+
+				System.out.println("p = Ether(src=srcmac, dst=dstmac, type=0x0800) / IP(src = '" + srcipString + "', dst = '" + dstipString + "') / msg");
+        		System.out.println("sendp(p, iface = \"veth0\", verbose = 0)");
+			}
+			scanner.close();
+			return;
+		}
+		catch (FileNotFoundException e)
+		{
+			System.err.format("Exception occurred trying to read '%s'.", filename);
+			e.printStackTrace();
+			return;
+		}
+	}
+
 	public static ArrayList<Packet> parseCAIDAPacketData(String filename){
 		ArrayList<Packet> packetStream = new ArrayList<Packet>();
 		File file = new File(filename);
