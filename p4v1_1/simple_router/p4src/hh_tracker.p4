@@ -28,7 +28,7 @@ header_type tracking_metadata_t {
         bit<1> mValid;
         bit<32> mKeyCarried;
         bit<32> mCountCarried;
-        bit<32> mSwapSpace;
+        bit<32> mDiff;
     }
 }
 
@@ -70,18 +70,18 @@ action do_stage1(){
 
     // check if location is empty or has a differentkey in there
     track_meta.mKeyInTable = (track_meta.mValid == 0)? track_meta.mKeyCarried : track_meta.mKeyInTable;
-    track_meta.mSwapSpace = track_meta.mKeyInTable - track_meta.mKeyCarried;
+    track_meta.mDiff = track_meta.mKeyInTable - track_meta.mKeyCarried;
 
     // update hash table
     flow_tracker_stage1[track_meta.mIndex] = ipv4.srcAddr; //track_meta.mKeyCarried;
-    packet_counter_stage1[track_meta.mIndex] = ((track_meta.mSwapSpace == 0)?
+    packet_counter_stage1[track_meta.mIndex] = ((track_meta.mDiff == 0)?
     track_meta.mCountInTable + 1 : 1);
     valid_bit_stage1[track_meta.mIndex] = 1;
 
     // update metadata carried to the next table stage
-    track_meta.mKeyCarried = ((track_meta.mSwapSpace == 0) ? 0:
+    track_meta.mKeyCarried = ((track_meta.mDiff == 0) ? 0:
     track_meta.mKeyInTable);
-    track_meta.mCountCarried = ((track_meta.mSwapSpace == 0) ? 0:
+    track_meta.mCountCarried = ((track_meta.mDiff == 0) ? 0:
     track_meta.mCountInTable);  
 }
 
@@ -114,6 +114,7 @@ action do_stage2(){
     // hash using my custom function 
     modify_field_with_hash_based_offset(track_meta.mIndex, 0, stage2_hash,
     1024);
+
     flow_tracker_stage2[0] = track_meta.mIndex;
 
     // read the key and value at that location
@@ -123,26 +124,26 @@ action do_stage2(){
 
     // check if location is empty or has a differentkey in there
     track_meta.mKeyInTable = (track_meta.mValid == 0)? track_meta.mKeyCarried : track_meta.mKeyInTable;
-    track_meta.mSwapSpace = track_meta.mKeyInTable - track_meta.mKeyCarried;
+    track_meta.mDiff = track_meta.mKeyInTable - track_meta.mKeyCarried;
 
     // update hash table
-    flow_tracker_stage2[track_meta.mIndex] = ((track_meta.mSwapSpace == 0)?
-    track_meta.mKeyInTable : ((track_meta.mCountInTable <
-    track_meta.mCountCarried) ? track_meta.mKeyCarried :
+    flow_tracker_stage2[track_meta.mIndex] = ((track_meta.mDiff == 0)?
+    track_meta.mKeyInTable : ((track_meta.mCountCarried >=
+    track_meta.mCountInTable) ? track_meta.mKeyCarried :
     track_meta.mKeyInTable));
 
-    packet_counter_stage2[track_meta.mIndex] = ((track_meta.mSwapSpace == 0)?
+    packet_counter_stage2[track_meta.mIndex] = ((track_meta.mDiff == 0)?
     track_meta.mCountInTable + track_meta.mCountCarried :
-    ((track_meta.mCountInTable < track_meta.mCountCarried) ?
+    ((track_meta.mCountCarried >= track_meta.mCountInTable) ?
     track_meta.mCountCarried : track_meta.mCountInTable));
 
     valid_bit_stage2[track_meta.mIndex] = ((track_meta.mValid == 0) ?
     ((track_meta.mKeyCarried == 0) ? (bit<1>)0 : 1) : (bit<1>)1);
 
     // update metadata carried to the next table stage
-    track_meta.mKeyCarried = ((track_meta.mSwapSpace == 0) ? 0:
+    track_meta.mKeyCarried = ((track_meta.mDiff == 0) ? 0:
     track_meta.mKeyInTable);
-    track_meta.mCountCarried = ((track_meta.mSwapSpace == 0) ? 0:
+    track_meta.mCountCarried = ((track_meta.mDiff == 0) ? 0:
     track_meta.mCountInTable);  
 }
 
