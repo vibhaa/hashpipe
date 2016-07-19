@@ -225,16 +225,15 @@ public class LossyFlowIdentifier{
 			}
 		}
 
-		/*
 		for (int thr_index = 0; thr_index < threshold.length; thr_index++){
 			System.out.print(tableSize + "," + threshold[thr_index] + "," + D + ",");
 			System.out.print((double) numberOfFalsePositives[thr_index]/numberOfTrials/observedSize[thr_index] + ",");
 			System.out.print((double) numberOfFalseNegatives[thr_index]/numberOfTrials/expectedSize[thr_index] + ",");
 			System.out.print(expectedSize[thr_index] + "," + observedSize[thr_index] + "," + (double) bigLoserPacketReported[thr_index]/bigLoserPacketCount[thr_index]);
 			System.out.println("," + cumDeviation[thr_index]/numberOfTrials + "," + occupiedSlots[thr_index]/tableSize/numberOfTrials + "," + duplicates[thr_index]/tableSize/numberOfTrials);
-		}*/
+		}
 
-		lostFlowHashTable.printBuckets();
+		//lostFlowHashTable.printBuckets();
 	}
 
 	public static void runSizeDifferenceMeasurement(SummaryStructureType type, Sketch originalPacketSketch, ArrayList<Packet> lostPacketStream, int tableSize){
@@ -679,16 +678,16 @@ public class LossyFlowIdentifier{
 		//final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024, 2048/*, 4096, 8192*/};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
-		final double threshold[] = {0.003/*, 0.002, 0.0006, 0.00015, 0.000075*/};
-		//final int tableSize[] = {2520, 5040, 7560/*, 10080*/};
-		final int tableSize[] = {64};
+		final double threshold[] = {0.003, 0.002, 0.0006, 0.00015, 0.000075};
+		final int tableSize[] = {2520, 5040, 7560, /*10080*/};
+		//final int tableSize[] = {64};
 
 		if (args[2].equals("runTrial"))	{
 			//System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 				//for (int thr_index = 0; thr_index < threshold.length; thr_index++){
-					for (int D = 2; D <= 2; D++){
-						if (D == 11)
+					for (int D = 2; D <= 15; D++){
+						if (D == 11 || D == 13)
 							continue;
 						// change the expected flows to be lost accordingly
 						// compare observed and expected lossy flows and compute the probability of erro

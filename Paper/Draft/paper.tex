@@ -1,0 +1,214 @@
+\newif \ifdraft \drafttrue 
+\documentclass[10pt,twocolumn]{confpaper}
+
+\newif \ifappendix \appendixfalse
+
+\makeatletter \@input{texdirectives} \makeatother
+
+%%%%%%%%%%%%%%%%%%%%  INCLUDES  %%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{csquotes}
+\usepackage{xspace}
+\usepackage{ragged2e}
+\usepackage{fixltx2e}
+\usepackage{amsmath,amsthm,amsfonts}
+\usepackage{mdframed}
+\usepackage{stmaryrd}
+\usepackage{calc}
+\usepackage[makeroom]{cancel}
+\usepackage{algpseudocode}
+%\usepackage{algorithm}
+\ifappendix \usepackage[ruled,vlined]{algorithm2e} \fi
+\usepackage{makecell}
+\usepackage{lineno}
+\def\linenumberfont{\footnotesize}
+\usepackage{enumitem}
+\usepackage[justification=centering, font=small]{caption}
+\usepackage[export]{adjustbox}
+\usepackage{bm}
+\usepackage{amstext}
+\usepackage{tabularx}
+\usepackage{balance}
+\usepackage{authblk}
+
+\makeatletter
+\renewcommand\AB@affilsepx{ , \protect\Affilfont}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%  LOCALS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlist[enumerate,1]{%
+  label=\arabic*.,
+}
+
+\newlist{inlinelist}{enumerate*}{1}
+\setlist*[inlinelist,1]{%
+  label=(\roman*),
+}
+
+\newcommand{\system}{{\em NetASM}}
+\newcommand{\lang}{SNAP\xspace}
+\newcommand{\Lang}{SNAP\xspace}
+\newcommand{\xFDD}{xFDD\xspace}
+\newcommand{\xFDDs}{xFDDs\xspace}
+\newcommand{\Tunnel}[1][footnotesize]{\code[#1]{DNS-tunnel-detect}\xspace}
+\newcommand{\tsub}{\textsubscript}
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\sequence}[1]{<#1>}
+\newcommand*{\Ucup}{\bigcup}
+\newcommand{\fddl}{\sqsubset}
+\newcommand{\atomic}{\mathsf{atomic}}
+\newcommand{\snaptitle}[1]{\noindent {\bf #1}}
+
+\newcommand{\eval}{\mathsf{eval}}
+\newcommand{\evale}{\mathsf{eval}_e}
+\renewcommand{\merge}{\mathsf{merge}}
+\newcommand{\elog}{\mathsf{E}}
+\newcommand{\Let}[3]{\text{let } {#1} ~=~ {#2} \text{in } {#3}}
+\newcommand{\IfElse}[3]{\text{if } #1 \text{ then } #2 \text{ else } #3}
+\newcommand{\ty}{\mathsf{ty}}
+\renewcommand{\-}{\ensuremath{\vdash}}
+\renewcommand{\=}{\ensuremath{\models}}
+\newcommand{\uni}{\mathsf{unicast}}
+\newcommand{\multi}{\mathsf{multicast}}
+\newcommand{\LA}{anlys}
+\newcommand{\PLA}{\LA\tsub{p}}
+\newcommand{\Nodes}{\mathsf{Nodes}}
+\newcommand{\Switches}{\mathsf{Switches}}
+\newcommand{\Edge}{\mathsf{Edge}}
+\newcommand{\StVar}{\mathsf{StateVars}}
+
+\newcommand{\ignore}[1]{}
+\newcommand{\TODO}[1]{\ifdraft {\color{red} \textbf{TODO:} {#1}} \fi }
+\newcommand{\dpw}[1]{\ifdraft {\color{red} \textbf{DPW:} {#1}} \fi }
+\newcommand{\jrex}[1]{\ifdraft {\color{orange} \textbf{JR:} {#1}} \fi }
+\newcommand{\mta}[1]{\ifdraft {\color{blue} \textbf{MTA:} {#1}} \fi }
+
+\usepackage[hang,flushmargin]{footmisc} 
+\usepackage{textcomp}
+\newcommand{\cref}[1]{\textsection\ref{#1}}
+%\usepackage{cleveref}
+%\crefname{section}{\S}{\S\S}
+%\Crefname{section}{\S}{\S\S}
+
+\newsavebox\CBox
+\newcommand\hcancel[2][0.5pt]{%
+	\ifmmode\sbox\CBox{$#2$}\else\sbox\CBox{#2}\fi%
+	\makebox[0pt][l]{\usebox\CBox}%  
+	\rule[0.5\ht\CBox-#1/2]{\wd\CBox}{#1}}
+%%%%%%%%%%%%%%%%%%%%  LANGUAGE COMMANDS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[2][footnotesize]{\begin{#1}\texttt{#2}\end{#1}}
+\newcommand{\match}[2]{#1 = #2}
+\newcommand{\modify}[2]{#1 <- #2}
+
+\newcommand{\union}[2]{#1+#2}
+\newcommand{\seq}[2]{#1;#2}
+\newcommand{\inters}[2]{#1 \& #2}
+\newcommand{\id}{id}
+\newcommand{\drop}{drop}
+\newcommand{\pstar}[1]{#1\textsuperscript{*}}
+\newcommand{\ifelse}[3]{if #1 then #2 else #3}
+\newcommand{\boldifelse}[3]{\textbf{if} #1 \textbf{then} #2 \textbf{else} #3}
+\newcommand{\negate}[1]{$\sim$#1}
+\newcommand{\pp}{\text{\code{++}}}
+\newcommand{\mm}{\text{\code{-{}-}}}
+
+\newcommand{\Expr}{\mathsf{Expr}}
+\newcommand{\Pol}{\mathsf{Pol}}
+\newcommand{\Pred}{\mathsf{Pred}}
+\newcommand{\Packet}{\mathsf{Packet}}
+\newcommand{\Log}{\mathsf{Log}}
+\newcommand{\St}{\mathsf{St}}
+\newcommand{\Store}{\mathsf{Store}}
+\newcommand{\Val}{\mathsf{Val}}
+\newcommand{\consistent}{\mathsf{consistent}}
+\newcommand{\harpoon}{\overset{\rightharpoonup}}
+
+\newcommand{\stgraph}{\textproc{st-dep}}
+\newcommand{\R}{\textproc{r}}
+\newcommand{\W}{\textproc{w}}
+%%%%%%%%%%%%%%%%%%%%  HIGHLIGHTING % %%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\highlighttext}[2][yellow]{{\setlength{\fboxsep}{0pt}\colorbox{#1}{#2}}}
+
+\newcommand{\highlight}[2][yellow]{\mathchoice%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\displaystyle#2$}}}%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\textstyle#2$}}}%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\scriptstyle#2$}}}%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\scriptscriptstyle#2$}}}}
+
+%%%%%%%%%%%%%%%%%%%%%  SPACING % %%%%%%%%%%%%%%%%%%%%%%%
+\setlength{\abovecaptionskip}{0.5mm}
+\setlength{\belowcaptionskip}{-2mm}
+%%%%%%%%%%%%%%%%%%%%  TITLE/AUTHORS  %%%%%%%%%%%%%%%%%%%%%
+
+\date{}
+\title{\ttlfnt{Heavy Hitter Detection in Commodity Switches}}
+%\author[1]{}
+%\author[1]{} 
+%\author[2]{}
+%\author[1]{}
+%\author[1]{}
+%\affil[1]{Princeton University}
+%\affil[2]{}
+%\setcounter{Maxaffil}{0}
+\renewcommand\Affilfont{\small}
+\author{
+Paper \# \ "paper num",  
+\pageref{lastpage} pages
+%\aufnt{\AUTHORS} \\
+%\affaddr{Affiliation}
+}
+
+%%%%%%%%%%%%%%%%%%%%  START OF DOCUMENT  %%%%%%%%%%%%%%%%%
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+%\AcmCopyright
+%\ToAppear
+\begin{sloppypar}
+
+\input{abstract}
+
+\ifthenelse{\equal{\onlyAbstract}{no}}{% !onlyAbstract
+
+\input{introduction}
+\input{problem}
+\input{algorithm}
+\input{analysis}
+\input{evaluation}
+\input{discussion}
+\input{related}
+\input{conclusion}\label{lastpage}
+
+\end{sloppypar}
+
+%\vspace{-0.1in}
+%\section*{Acknowledgments}
+% Comments for people we need to acknowledge in the final version.
+
+%\pagebreak
+
+\clearpage
+%\setlength{\bibsep}{0pt}
+\setlength{\parskip}{-1pt}
+\setlength{\itemsep}{-1pt}
+ \footnotesize % SPACE
+\bibliography{paper}
+\bibliographystyle{abbrv}
+%\bibliographystyle{abbrvnat_noaddr} % SPACE
+%\theendnotes % ENDNOTES
+
+}
+{% onlyAbstract
+}
+
+\ifappendix
+\clearpage
+\appendix
+\input{appendix}
+\fi
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%  END OF DOCUMENT  %%%%%%%%%%%%%%%%%%%%
