@@ -1,4 +1,0 @@
-table_set_default format_options _nop
-table_add format_options format_options_security 1 0 =>
-table_add format_options format_options_timestamp 0 1 =>
-table_add format_options format_options_both 1 1 =>

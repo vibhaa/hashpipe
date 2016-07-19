@@ -196,3 +196,18 @@ TSWLatexianTemp*
 
 # KBibTeX
 *~[0-9]*
+
+
+# Python byte code
+*.pyc
+
+# Emacs
+*~
+
+# Compiled JSON
+*.json
+
+*.pcap
+
+# Extracted solutions
+solution*/
