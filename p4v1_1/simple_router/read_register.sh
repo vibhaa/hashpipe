@@ -26,16 +26,22 @@ if [ $# -lt 1 ]; then
 fi
 index=$1
 
+i=0
 
-for i in 'seq 0 31';
+while [ $i -lt 32 ]
 do
-	echo 'register_read flow_tracker_stage1 $i' | $CLI_PATH simple_router.json
-	echo ','
-	echo 'register_read packet_counter_stage1 $i' | $CLI_PATH simple_router.json
-	echo ',,'
-	echo 'register_read flow_tracker_stage2 $i' | $CLI_PATH simple_router.json
-	echo ','
-	echo 'register_read packet_counter_stage2 $i' | $CLI_PATH simple_router.json
-	echo ',,'
-	echo '\n'
+#echo $i
+echo "register_read flow_tracker_stage1 $i" | $CLI_PATH simple_router.json
+#echo ','
+echo "register_read packet_counter_stage1 $i" | $CLI_PATH simple_router.json
+#echo ',,'
+echo "register_read flow_tracker_stage2 $i" | $CLI_PATH simple_router.json
+#echo ','
+echo "register_read packet_counter_stage2 $i" | $CLI_PATH simple_router.json
+#echo ",,"
+# echo "\n"
+i=$[$i+1]
 done
+
+
+

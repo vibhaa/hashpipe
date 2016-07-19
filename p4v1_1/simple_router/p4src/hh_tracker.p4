@@ -9,7 +9,7 @@ field_list_calculation stage1_hash {
         hash_list;
     }
     algorithm : my_hash_1;
-    output_width : 10;
+    output_width : 5;
 }
 
 field_list_calculation stage2_hash {
@@ -17,14 +17,14 @@ field_list_calculation stage2_hash {
         hash_list;
     }
     algorithm : my_hash_2;
-    output_width : 10;
+    output_width : 5;
 }
 
 header_type tracking_metadata_t {
     fields {
         bit<32> mKeyInTable;
         bit<32> mCountInTable;
-        bit<10> mIndex;
+        bit<5> mIndex;
         bit<1> mValid;
         bit<32> mKeyCarried;
         bit<32> mCountCarried;
@@ -37,19 +37,19 @@ metadata tracking_metadata_t track_meta;
 register flow_tracker_stage1 {
     width: 32;
     static: track_stage1;
-    instance_count: 1024;
+    instance_count: 32;
 }
 
 register packet_counter_stage1 {
     width: 32;
     static: track_stage1;
-    instance_count: 1024;
+    instance_count: 32;
 }
 
 register valid_bit_stage1 {
     width: 1;
     static: track_stage1;
-    instance_count: 1024;
+    instance_count: 32;
 }
 
 action do_stage1(){
@@ -59,7 +59,7 @@ action do_stage1(){
 
     // hash using my custom function 
     modify_field_with_hash_based_offset(track_meta.mIndex, 0, stage1_hash,
-    1024);
+    32);
 
     //flow_tracker_stage1[0] = track_meta.mIndex;
 
@@ -95,25 +95,25 @@ table track_stage1 {
 register flow_tracker_stage2 {
     width: 32;
     static: track_stage2;
-    instance_count: 1024;
+    instance_count: 32;
 }
 
 register packet_counter_stage2 {
     width: 32;
     static: track_stage2;
-    instance_count: 1024;
+    instance_count: 32;
 }
 
 register valid_bit_stage2 {
     width: 1;
     static: track_stage2;
-    instance_count: 1024;
+    instance_count: 32;
 }
 
 action do_stage2(){
     // hash using my custom function 
     modify_field_with_hash_based_offset(track_meta.mIndex, 0, stage2_hash,
-    1024);
+    32);
 
     //flow_tracker_stage2[0] = track_meta.mIndex;
 
@@ -128,13 +128,13 @@ action do_stage2(){
 
     // update hash table
     flow_tracker_stage2[track_meta.mIndex] = ((track_meta.mDiff == 0)?
-    track_meta.mKeyInTable : ((track_meta.mCountCarried >=
-    track_meta.mCountInTable) ? track_meta.mKeyCarried :
+    track_meta.mKeyInTable : ((track_meta.mCountInTable <
+    track_meta.mCountCarried) ? track_meta.mKeyCarried :
     track_meta.mKeyInTable));
 
     packet_counter_stage2[track_meta.mIndex] = ((track_meta.mDiff == 0)?
     track_meta.mCountInTable + track_meta.mCountCarried :
-    ((track_meta.mCountCarried >= track_meta.mCountInTable) ?
+    ((track_meta.mCountInTable < track_meta.mCountCarried) ?
     track_meta.mCountCarried : track_meta.mCountInTable));
 
     valid_bit_stage2[track_meta.mIndex] = ((track_meta.mValid == 0) ?
