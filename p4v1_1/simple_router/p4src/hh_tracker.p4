@@ -65,6 +65,7 @@ action do_stage1(){
     hh_meta.mValid = valid_bit_stage1[hh_meta.mIndex];
 
     // check if location is empty or has a differentkey in there
+    hh_meta.mKeyInTable = (hh_meta.mValid == 0)? hh_meta.mKeyCarried : hh_meta.mKeyInTable;
     hh_meta.mDiff = (hh_meta.mValid == 0)? 0 : hh_meta.mKeyInTable - hh_meta.mKeyCarried;
 
     // update hash table
@@ -116,6 +117,7 @@ action do_stage2(){
     hh_meta.mValid = valid_bit_stage2[hh_meta.mIndex];
 
     // check if location is empty or has a differentkey in there
+    hh_meta.mKeyInTable = (hh_meta.mValid == 0)? hh_meta.mKeyCarried : hh_meta.mKeyInTable;
     hh_meta.mDiff = (hh_meta.mValid == 0)? 0 : hh_meta.mKeyInTable - hh_meta.mKeyCarried;
 
     // update hash table
