@@ -683,7 +683,7 @@ public class LossyFlowIdentifier{
 		//final int tableSize[] = {64};
 
 		if (args[2].equals("runTrial"))	{
-			//System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
+			System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 				//for (int thr_index = 0; thr_index < threshold.length; thr_index++){
 					for (int D = 2; D <= 15; D++){

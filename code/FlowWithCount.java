@@ -1,7 +1,7 @@
 /*Data Structure used as a building block for the hash table
  that tracks the lossy packets*/
 
-public class FlowWithCount{
+public class FlowWithCount implements Comparable<FlowWithCount>{
 		long count;
 		long flowid;
 
@@ -15,5 +15,10 @@ public class FlowWithCount{
 				buckets[i].flowid = 0;
 				buckets[i].count = 0;
 			}
+		}
+
+		public int compareTo(FlowWithCount that){
+			// descending order
+			return Long.compare(that.count, this.count);
 		}
 	}
