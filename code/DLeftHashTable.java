@@ -499,7 +499,7 @@ public class DLeftHashTable{
 		}
 	}
 
-	public void processAggData(long key, int keynum, long value){
+	public void processAggData(long key, int keynum, long value,  int[] nonHHCompetitors, HashSet<Long> expectedHH){
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 5171;
 		final int hashA[] = { 	421, 	199, 	79,	83,	89,	97,	101,	103,	107,	109,	113,
@@ -546,6 +546,8 @@ public class DLeftHashTable{
 		int k = 0;
 		int firstLocation = 0; // how to track this in hardware
 
+		int currentCompetitors = 0; // variable to track the current number of heavy hitter competitors the current packet has seen
+
 		if (key == 0)
 		{
 			System.out.print("invalid Key");
@@ -572,6 +574,9 @@ public class DLeftHashTable{
 					break;
 				}
 
+				if (expectedHH.contains(buckets[index].flowid))
+					currentCompetitors++;
+
 				// track min - first time explicitly set the value
 				if (buckets[index].count < minValue || k == 0){
 					minValue = buckets[index].count;
@@ -579,6 +584,8 @@ public class DLeftHashTable{
 				}
 			}
 		}
+
+		nonHHCompetitors[currentCompetitors] += 1;
 
 		boolean isAggregateData = true;
 		// none of the D locations were free
@@ -633,7 +640,7 @@ public class DLeftHashTable{
 		else {
 			droppedPacketInfoCount = droppedPacketInfoCount + (int) buckets[minIndex].count;
 			buckets[minIndex].flowid = key;
-			buckets[minIndex].count = 1;
+			buckets[minIndex].count = 1; // replace with min+1
 		}
 	}
 

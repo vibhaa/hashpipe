@@ -76,35 +76,45 @@ public class AggregateModelVerifier{
 		float occupiedSlots[] = new float[k.length];
 		float duplicates[] = new float[k.length]; // number of duplicate entries in the table
 		double cumDeviation[] = new double[k.length]; // cumulative deviation in reported size across all flows
+		int nonHHCompetitors[] = new int[D + 1]; // tracks number of HH competitors each flow competes against on average
 
 		// track the unique heavy hitters
 		DLeftHashTable lostFlowHashTable = null;
 		HashMap<Long, Long> observedHH = new HashMap<Long, Long>();
 
+		// index at which k for comparing number of heavy hitters is at
+		int comp_index = 0;
+
 		for (int t = 0; t < numberOfTrials; t++){
 			Collections.shuffle(inputStream);
 
-			if (t < 2){
+			/*if (t < 2){
 				for (int i = 0; i < 15; i++)
 					System.err.println(inputStream.get(i).flowid + "," + inputStream.get(i).count);
 				System.err.println("new trial");
-			}
+			}*/
 
 			lostFlowHashTable = new DLeftHashTable(tableSize, type, inputStream.size(), D);
-
-			int count = 0;
-			for (FlowWithCount f : inputStream){
-				lostFlowHashTable.processAggData(f.flowid, count++, f.count);				
-			}
-
-			// observed flows in sorted order so that we can pick the hh as the top k
-			FlowWithCount[] outputFlowBuckets = Arrays.copyOf(lostFlowHashTable.getBuckets(), lostFlowHashTable.getBuckets().length);
-			Arrays.sort(outputFlowBuckets);
 
 			// given input, so ideal order of heavy hitters
 			FlowWithCount[] inputStreamArray = new FlowWithCount[inputStream.size()];
 			inputStreamArray = inputStream.toArray(inputStreamArray);
 			Arrays.sort(inputStreamArray);
+
+			// first k in inputStream are expected hh - fix which heavy hitters you look at for cdf of competitors
+			expectedHH = new HashSet<Long>();
+			for (int i = 0; i < k[comp_index]; i++){
+				expectedHH.add(inputStreamArray[i].flowid);
+			}
+
+			int count = 0;
+			for (FlowWithCount f : inputStream){
+				lostFlowHashTable.processAggData(f.flowid, count++, f.count, nonHHCompetitors, expectedHH);				
+			}
+
+			// observed flows in sorted order so that we can pick the hh as the top k
+			FlowWithCount[] outputFlowBuckets = Arrays.copyOf(lostFlowHashTable.getBuckets(), lostFlowHashTable.getBuckets().length);
+			Arrays.sort(outputFlowBuckets);
 			
 			cumDroppedPacketInfoCount += lostFlowHashTable.getDroppedPacketInfoCount();			
 
@@ -165,6 +175,11 @@ public class AggregateModelVerifier{
 			System.out.print(expectedSize[k_index] + "," + observedSize[k_index] + "," + (double) hhPacketsReported[k_index]/hhPacketCount[k_index]);
 			System.out.println("," + cumDeviation[k_index]/numberOfTrials + "," + numberOfFalsePositives[k_index] + "," + numberOfFalseNegatives[k_index]);
 		}
+
+		System.err.print(tableSize + "," + k[comp_index] + "," + D + ",");
+		for (int j = 0; j <= D; j++)
+			System.err.print(nonHHCompetitors[j]/numberOfTrials + ",");
+		System.err.println();
 	}
 
 	public static void main(String[] args){

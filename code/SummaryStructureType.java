@@ -111,5 +111,8 @@ public enum SummaryStructureType{
 	// Claim - if there is a key that hashes to this location more than 50% of the time
 	// that packets hash here, that will be left in this location at the end of this 
 	// process  
-	GroupCounters
+	GroupCounters,
+
+	// data structure that emulates Sample and HOld algorithm from Estan and Varghese's paper
+	SampleAndHold
 };
