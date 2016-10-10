@@ -9,6 +9,8 @@ public class DLeftHashTable{
 	private int tableSize;
 	private int droppedPacketInfoCount;
 	private int cumDroppedPacketInfoCount;
+	private double problematicEvictions;
+	private double totalEvictions;
 	private int totalNumberOfPackets;
 
 	private Sketch countMinSketch;
@@ -18,17 +20,38 @@ public class DLeftHashTable{
 
 	private SummaryStructureType type;
 	private final int D;
+	private HashMap<Long, Integer> actualFlowSizes;
+	private HashMap<Long, Integer> flowToRank;
 
-	public DLeftHashTable(int tableSize, SummaryStructureType type, int numberOfFlows, int D){
+	public DLeftHashTable(int tableSize, SummaryStructureType type, int numberOfFlows, int D, HashMap<Long,Integer> flowSizes){
 		this.tableSize = tableSize;
 		this.D = D;
 		droppedPacketInfoCount = 0;
 		cumDroppedPacketInfoCount = 0;
+		problematicEvictions = 0;
+		totalEvictions = 0;
 		totalNumberOfPackets = 0;
+		this.actualFlowSizes = flowSizes;
+
+		// given input, so ideal order of heavy hitters
+		ArrayList<FlowWithCount> flowSizesList = new ArrayList<FlowWithCount>();
+		for (long f : flowSizes.keySet()){
+			flowSizesList.add(new FlowWithCount(f, flowSizes.get(f)));
+		}
+		FlowWithCount[] inputFlowArray = new FlowWithCount[flowSizesList.size()];
+		inputFlowArray = flowSizesList.toArray(inputFlowArray);
+		Arrays.sort(inputFlowArray);
+
+		// get the ranks of all flows and populate rank map
+		flowToRank = new HashMap<Long, Integer>();
+		for (int i = 0; i < inputFlowArray.length; i++){
+			flowToRank.put(inputFlowArray[i].flowid, i + 1);
+		}
+
 
 		this.type = type;
 
-		if (type == SummaryStructureType.DLeft || type == SummaryStructureType.BasicHeuristic || type == SummaryStructureType.MinReplacementHeuristic){
+		if (type == SummaryStructureType.DLeft || type == SummaryStructureType.BasicHeuristic || type == SummaryStructureType.MinReplacementHeuristic || type == SummaryStructureType.OverallMinReplacement){
 			buckets = new FlowWithCount[tableSize];
 		
 			for (int j = 0; j < tableSize; j++){
@@ -65,11 +88,11 @@ public class DLeftHashTable{
 		}
 	}
 
-	public void processData(long key, int keynum){
+	public void processData(long key, int keynum, HashMap<Integer, Integer> rankToFrequency){
 		if (type == SummaryStructureType.EvictionWithoutCount)
 			processDataWithoutCountInTable(key);
 		else
-			processDataWithCountInTable(key, keynum);
+			processDataWithCountInTable(key, keynum, rankToFrequency);
 	}
 
 	public void processDataWithoutCountInTable(long key){
@@ -156,10 +179,11 @@ public class DLeftHashTable{
 		}
 	}
 
-	public void processDataWithCountInTable(long key, int keynum){
+	public void processDataWithCountInTable(long key, int keynum, HashMap<Integer, Integer> rankToFrequency){
 		// hardcoded values for the hash functions given that the number of flows is 100
-		final int P = 5171;
-		final int hashA[] = { 	421, 	199, 	79,	83,	89,	97,	101,	103,	107,	109,	113,
+		final int P = 9029;
+		final int hashA[] = { 	10273, 8941, 11597, 9203, 12289, 11779,
+								421, 	199, 	79,	83,	89,	97,	101,	103,	107,	109,	113,
 								127,	131,	137,	139,	149,	151,	157,	163,	167,	173,
 								179,	181,	191,	193,	197,	199,	211,	223,	227,	229,
 								233,	239,	241,	251,	257,	263,	269,	271,	277,	281,
@@ -174,7 +198,8 @@ public class DLeftHashTable{
 								1381,	1399,	1409,	1423,	1427,	1429,	1433,	1439,	1447,	1451};
 
 			//421, 149, 311, 701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453};
-		final int hashB[] = {   73, 	3079, 	613,	617,	619,	631,	641,	643,	647,	653,	659,
+		final int hashB[] = {   12037, 12289, 9677, 11447, 8837, 10847, 
+			                    73, 	3079, 	613,	617,	619,	631,	641,	643,	647,	653,	659,
 								661,	673,	677,	683,	691,	701,	709, 	719,	727,	733,
 								739,	743,	751,	757,	761,	769,	773,	787,	797,	809,
 								811,	821,	823,	827,	829,	839,	853,	857,	859, 	863,
@@ -236,13 +261,16 @@ public class DLeftHashTable{
 			}
 
 			buckets[minIndex].flowid = key;
-			buckets[minIndex].count = 1;
+			buckets[minIndex].count += 1;
 			return;
 		}
 
 		for (k = 0; k < D; k++){
 			int index = (int) ((hashA[k]*keyBeingCarried + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
 			int curKeyIndex = (int) ((hashA[k]*key + hashB[k]) % P) % (tableSize/D) + (k*tableSize/D);
+
+			/*int index = (int) ((hashA[k]*keyBeingCarried + hashB[k]) % P) % (tableSize);
+			int curKeyIndex = (int) ((hashA[k]*key + hashB[k]) % P) % (tableSize);*/
 
 			if (type == SummaryStructureType.AsymmetricDleftSingleLookUp){
 				/*int[] size = {294*tableSize/1024, 267*tableSize/1024, 243*tableSize/1024, 220*tableSize/1024};
@@ -449,7 +477,20 @@ public class DLeftHashTable{
 						}
 					}
 
-					
+					if (actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)){
+					//System.out.println("incorrect eviction");
+						problematicEvictions++;
+					}
+					totalEvictions++;
+
+					if (k == D - 1 && rankToFrequency != null /*&& actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)*/){
+						int curRank = flowToRank.get(keyBeingCarried);
+						if (rankToFrequency.containsKey(curRank)){
+							rankToFrequency.put(curRank, rankToFrequency.get(curRank) + 1);
+						}
+						else
+							rankToFrequency.put(curRank, 1);
+					}					
 					
 				/*}
 				else{
@@ -490,7 +531,7 @@ public class DLeftHashTable{
 			if (type == SummaryStructureType.DLeft)
 				doNothing();
 			else if (type == SummaryStructureType.BasicHeuristic)
-				basicHeuristic(minIndex, key, false, 1);
+				basicHeuristic(minIndex, key, false, 1, rankToFrequency);
 			else if (type == SummaryStructureType.MinReplacementHeuristic)
 				minReplacementHeuristic(minIndex, key);
 			else if (type == SummaryStructureType.EvictionWithCount)
@@ -501,7 +542,7 @@ public class DLeftHashTable{
 
 	public void processAggData(long key, int keynum, long value,  int[] nonHHCompetitors, HashSet<Long> expectedHH){
 		// hardcoded values for the hash functions given that the number of flows is 100
-		final int P = 5171;
+		final int P = 9029;
 		final int hashA[] = { 	421, 	199, 	79,	83,	89,	97,	101,	103,	107,	109,	113,
 								127,	131,	137,	139,	149,	151,	157,	163,	167,	173,
 								179,	181,	191,	193,	197,	199,	211,	223,	227,	229,
@@ -583,6 +624,33 @@ public class DLeftHashTable{
 					minIndex = index;
 				}
 			}
+			else if (type == SummaryStructureType.RollingMinSingleLookup){
+				if (buckets[index].flowid == keyBeingCarried) {
+					buckets[index].count+= valueBeingCarried;
+					break;
+				}
+
+				// new flow
+				if (buckets[index].flowid == 0) {
+					buckets[index].flowid = keyBeingCarried;
+					buckets[index].count = valueBeingCarried;
+					break;
+				}
+
+				if (expectedHH.contains(buckets[index].flowid))
+					currentCompetitors++;
+
+				// carry the min over in rolling fashion
+				if (buckets[index].count < valueBeingCarried){
+					long temp = valueBeingCarried;
+					valueBeingCarried = buckets[index].count;
+					buckets[index].count = temp;
+
+					temp = keyBeingCarried;
+					keyBeingCarried = buckets[index].flowid;
+					buckets[index].flowid = temp;
+				}
+			}
 		}
 
 		nonHHCompetitors[currentCompetitors] += 1;
@@ -594,12 +662,16 @@ public class DLeftHashTable{
 			if (type == SummaryStructureType.DLeft)
 				doNothing();
 			else if (type == SummaryStructureType.BasicHeuristic)
-				basicHeuristic(minIndex, key, isAggregateData, value);
+				basicHeuristic(minIndex, key, isAggregateData, value, null);
 		}
 	}
 
 	public int getDroppedPacketInfoCount(){
 		return droppedPacketInfoCount;
+	}
+
+	public double getProblematicEvictionFraction(){
+		return problematicEvictions/totalEvictions;
 	}
 
 	public FlowWithCount[] getBuckets(){
@@ -626,7 +698,7 @@ public class DLeftHashTable{
 			return null;
 	}
 
-	public void basicHeuristic(int minIndex, long key, boolean isAggregateData, long value){
+	public void basicHeuristic(int minIndex, long key, boolean isAggregateData, long value, HashMap<Integer, Integer> rankToFrequency){
 		//packetsInfoDroppedAtFlow[buckets[minIndex].flowid - 1] = (int) buckets[minIndex].count;
 		if (isAggregateData){
 			if (value > buckets[minIndex].count){
@@ -638,9 +710,26 @@ public class DLeftHashTable{
 				droppedPacketInfoCount = droppedPacketInfoCount + (int) value;
 		}
 		else {
+			if (actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
+				//System.out.println("incorrect eviction");
+				problematicEvictions++;
+			}
+			totalEvictions++;
+
+			if (rankToFrequency != null /*&& actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)*/){
+				int curRank = flowToRank.get(buckets[minIndex].flowid);
+				if (rankToFrequency.containsKey(curRank)){
+					rankToFrequency.put(curRank, rankToFrequency.get(curRank) + 1);
+				}
+				else
+					rankToFrequency.put(curRank, 1);
+			}	
+
 			droppedPacketInfoCount = droppedPacketInfoCount + (int) buckets[minIndex].count;
 			buckets[minIndex].flowid = key;
-			buckets[minIndex].count = 1; // replace with min+1
+			buckets[minIndex].count += 1; // replace with min+1
+
+			
 		}
 	}
 

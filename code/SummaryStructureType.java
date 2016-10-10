@@ -114,5 +114,8 @@ public enum SummaryStructureType{
 	GroupCounters,
 
 	// data structure that emulates Sample and HOld algorithm from Estan and Varghese's paper
-	SampleAndHold
+	SampleAndHold, 
+
+	// data structure for univMon with logN substreams
+	UnivMon
 };

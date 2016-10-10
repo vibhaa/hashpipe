@@ -94,7 +94,7 @@ public class AggregateModelVerifier{
 				System.err.println("new trial");
 			}*/
 
-			lostFlowHashTable = new DLeftHashTable(tableSize, type, inputStream.size(), D);
+			lostFlowHashTable = new DLeftHashTable(tableSize, type, inputStream.size(), D, flowSizes);
 
 			// given input, so ideal order of heavy hitters
 			FlowWithCount[] inputStreamArray = new FlowWithCount[inputStream.size()];
@@ -121,10 +121,10 @@ public class AggregateModelVerifier{
 			// find the top k for different k values and compare expected against observed
 			for (int k_index = 0; k_index < k.length; k_index++){
 				observedHH = new HashMap<Long, Long>();
-				if (type == SummaryStructureType.BasicHeuristic) {
-					for (int i = 0; i < k[k_index]; i++){
-						observedHH.put(outputFlowBuckets[i].flowid, outputFlowBuckets[i].count);
-					}
+				for (int i = 0; i < k[k_index]; i++){
+					if (observedHH.containsKey(outputFlowBuckets[i].flowid))
+						System.out.println("duplicate");
+					observedHH.put(outputFlowBuckets[i].flowid, outputFlowBuckets[i].count);
 				}
 
 				int hhPacketsLost = 0;
@@ -227,7 +227,10 @@ public class AggregateModelVerifier{
 				for (int D = 2; D <= 15; D++){
 					if (D == 11 || D == 13) // not exact divisors, so will leave some space
 						continue;
-					runExperiment(SummaryStructureType.BasicHeuristic, inputAggPacketStream, k, tableSize[tableSize_index], D);
+					if (args[1].contains("Basic"))
+						runExperiment(SummaryStructureType.BasicHeuristic, inputAggPacketStream, k, tableSize[tableSize_index], D);
+					else if (args[1].contains("Single"))
+						runExperiment(SummaryStructureType.RollingMinSingleLookup, inputAggPacketStream, k, tableSize[tableSize_index], D);
 				}
 			}
 		}
