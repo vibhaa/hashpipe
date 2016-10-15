@@ -21,16 +21,16 @@ public class FindFlowSize{
 
 				fields = line.split(",");
 
-				if (fields.length < 5)
-					continue;
+				//if (fields.length < 5)
+				//	continue;
 
 				String srcipString = fields[0]; // caida default
-				if (!filename.contains("Caida")){
+				/*if (!filename.contains("Caida")){
 					srcipString = fields[3];
 				}
 
 				if (srcipString.length() == 0)
-					continue;
+					continue;*/
 
 				if (true){
 					if (!filename.contains("Caida")){

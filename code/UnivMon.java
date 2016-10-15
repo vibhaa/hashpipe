@@ -6,7 +6,7 @@ import java.util.*;
  ||
  ||         Author:  Vibhaa Sivaraman
  ||
- ||        Purpose:  To simulate the UnivMon example from the code
+ ||        Purpose:  To simulate the UnivMon algorithm
  ||
  ||  Inherits From:  None
  ||
@@ -25,23 +25,23 @@ public class UnivMon{
 	private int cumDroppedPacketInfoCount;
 	private int totalNumberOfPackets;
 	private int numberOfSubstreams;
-	private double threshold;
+	private int k;
 
 	private HashMap<Long, Long> flowMemory;
 	private Sketch cSketches[];
-	private HashMap<Long, Long> heavyhitterList;
+	private ArrayList<HashMap<Long, Long>> heavyhitterList;
 
 	private SummaryStructureType type;
 
-	public UnivMon(int totalMemory, SummaryStructureType type, int numberOfFlows, double threshold){
+	public UnivMon(int totalMemory, SummaryStructureType type, int numberOfPackets, int k){
 		this.tableSize = totalMemory;
 		// keys take twice as much space as counters and 2 sets of counters
 
 		droppedPacketInfoCount = 0;
 		cumDroppedPacketInfoCount = 0;
-		totalNumberOfPackets = 0;
+		totalNumberOfPackets = numberOfPackets;
 		this.numberOfSubstreams = 15;
-		this.threshold = threshold;
+		this.k = k;
 
 		this.type = type;
 		
@@ -50,13 +50,48 @@ public class UnivMon{
 			flowMemory[j] = new FlowWithCount(0, 0);
 		}*/
 
-		cSketches = new Sketch[numberOfSubstreams];
+		cSketches = new Sketch[numberOfSubstreams + 1]; // extra zero level
 
-		for (int i = 0; i < numberOfSubstreams; i++){
-			cSketches[i] = new Sketch(totalMemory/numberOfSubstreams, 5, numberOfFlows);
+		heavyhitterList = new ArrayList<HashMap<Long, Long>>(numberOfSubstreams + 1);
+		for (int i = 0; i <= numberOfSubstreams; i++){
+			//cSketches[i] = new Sketch(totalMemory/numberOfSubstreams/3, 3, numberOfPackets);
+			cSketches[i] = new Sketch(1000, 5, numberOfPackets);
+			heavyhitterList.add(new HashMap<Long, Long>());
 		}
 
-		heavyhitterList = new HashMap<Long, Long>();
+	}
+
+	private void performOneUpdate(int i, long key){
+		//cSketches[i].updateCountInCountSketch(key);
+		cSketches[i].updateCountInSketch(key);
+		long minKey = -1;
+		long minCount = -1;
+		boolean flag = false;
+		for (Long k : heavyhitterList.get(i).keySet()){
+			if (flag == false || heavyhitterList.get(i).get(k) < minCount){
+				minCount = heavyhitterList.get(i).get(k);
+				minKey = k;
+				flag = true;
+			}
+		}
+
+		HashMap<Long, Long> curList = heavyhitterList.get(i);
+		/* count sketch version
+		if (curList.size() == k && cSketches[i].estimateCountinCountSketch(key) > minCount){
+			curList.put(key, cSketches[i].estimateCountinCountSketch(key));
+			curList.remove(minKey);
+		} 
+		else if (curList.size() < k)
+			curList.put(key, cSketches[i].estimateCountinCountSketch(key));*/
+
+
+		if (curList.size() == k && cSketches[i].estimateCount(key) > minCount){
+			curList.put(key, cSketches[i].estimateCount(key));
+			curList.remove(minKey);
+		} 
+		else if (curList.size() < k)
+			curList.put(key, cSketches[i].estimateCount(key));
+		heavyhitterList.set(i, curList);
 	}
 
 	public void processData(long key){
@@ -67,6 +102,8 @@ public class UnivMon{
 
 		totalNumberOfPackets++;
 
+		
+		performOneUpdate(numberOfSubstreams, key);
 		for (int i = 0; i < numberOfSubstreams; i++){
 			// sample, update count sketch, keep track of heavy hitters
 			for (int j = 0; j < i; j++){
@@ -74,9 +111,7 @@ public class UnivMon{
 				if (hash != 1)
 					return;
 			}
-			cSketches[i].updateCountInCountSketch(key);
-			if (cSketches[i].estimateCountinCountSketch(key) > threshold)
-				heavyhitterList.put(key, cSketches[i].estimateCountinCountSketch(key));
+			performOneUpdate(i, key);
 		}
 	}
 
@@ -89,7 +124,16 @@ public class UnivMon{
 	}
 
 	public HashMap<Long, Long> getHeavyHitters(){
-		return heavyhitterList;
+		HashMap<Long, Long> superList = new HashMap<Long, Long>();
+		for (int i = 0; i <= numberOfSubstreams; i++){
+			for (Long k : heavyhitterList.get(i).keySet())
+				superList.put(k, heavyhitterList.get(i).get(k));
+		}
+		return superList;
+	}
+
+	public Sketch[] getSketches(){
+		return cSketches;
 	}
 
 }

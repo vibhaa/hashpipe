@@ -223,7 +223,6 @@ public class LossyFlowIdentifier{
 					/*if (!expectedHH.contains(flowid) && observedHH.get(flowid) > flowSizes.get(flowid)){
 						System.out.println(flowid + " " + observedHH.get(flowid) + " " + flowSizes.get(flowid));
 					}*/
-
 					deviation += Math.abs(observedHH.get(flowid) - flowSizes.get(flowid));
 					denominator += flowSizes.get(flowid);
 				}
@@ -447,6 +446,7 @@ public class LossyFlowIdentifier{
 		long hhPacketCount[] = new long[threshold.length];
 		float occupancy[] = new float[threshold.length];
 		double cumDeviation[] = new double[threshold.length];
+		double cumUnderEstimation[] = new double[threshold.length];
 		float controllerReportCount[] = new float[threshold.length];
 
 		int observedSizeFromDump[] = new int[threshold.length];
@@ -558,10 +558,21 @@ public class LossyFlowIdentifier{
 					occupancy[thr_index] += (float) cmsketch.getSketch().getOccupancy();
 					controllerReportCount[thr_index] += (float) cmsketch.getControllerReports();
 				}
+
+				if (type == SummaryStructureType.UnivMon) {
+					float curOccupancy = 0;
+					for (Sketch s : univmon.getSketches())
+						curOccupancy += (float) s.getOccupancy();
+					curOccupancy /= univmon.getSketches().length;
+					occupancy[thr_index] += curOccupancy;
+				}
+
+
 			
 				int bigLoserPacketsLost = 0;
 				int flag = 0;
 				double deviation = 0;
+				double underEstimation = 0;
 				double denominator = 0;
 
 				for (long flowid : expectedHH){
@@ -595,11 +606,13 @@ public class LossyFlowIdentifier{
 						System.out.println(flowid + " " + observedHH.get(flowid) + " " + flowSizes.get(flowid));
 					}*/
 
+					underEstimation += -1 * (observedHH.get(flowid) - flowSizes.get(flowid));
 					deviation += Math.abs(observedHH.get(flowid) - flowSizes.get(flowid));
 					denominator += flowSizes.get(flowid);
 				}
 
 				cumDeviation[thr_index] += deviation/denominator;
+				cumUnderEstimation[thr_index] += underEstimation/denominator;
 
 				deviation = 0;
 				denominator = 0;
@@ -631,7 +644,7 @@ public class LossyFlowIdentifier{
 			System.out.print((double) numberOfFalsePositives[thr_index]/numberOfTrials/observedSize[thr_index] + ",");
 			System.out.print((double) numberOfFalseNegatives[thr_index]/numberOfTrials/expectedSize[thr_index] + ",");
 			System.out.print(expectedSize[thr_index] + "," + observedSize[thr_index] + "," + (double) hhPacketReported[thr_index]/hhPacketCount[thr_index]);
-			System.out.print("," + cumDeviation[thr_index]/numberOfTrials + "," + occupancy[thr_index]/numberOfTrials + "," + thr_totalPackets + "," + controllerReportCount[thr_index]/numberOfTrials + ",");
+			System.out.print("," + cumDeviation[thr_index]/numberOfTrials + "," + occupancy[thr_index]/numberOfTrials + "," + thr_totalPackets + "," + controllerReportCount[thr_index]/numberOfTrials + "," + cumUnderEstimation[thr_index]/numberOfTrials + ",");
 
 			if (type == SummaryStructureType.CountMinCacheWithKeys){
 				System.out.print((double) numberOfFalsePositivesinDump[thr_index]/numberOfTrials/observedSizeFromDump[thr_index] + ",");
@@ -721,7 +734,7 @@ public class LossyFlowIdentifier{
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
 		final double threshold[] = {0.00065, 0.0006, 0.00055, 0.00005, 0.00045, 0.0004};
-		final int tableSize[] = {2520, 5040, 7560, /*10080*/};
+		final int tableSize[] = {2520/*, 5040, 7560, /*10080*/};
 		//final int tableSize[] = {64};
 
 		if (args[2].equals("runTrial"))	{

@@ -104,6 +104,7 @@ public enum SummaryStructureType{
 	// to the controller
 	CountMinCacheWithKeys,
 
+	CountMinWithHeap,
 	// maintains the current key, a "count" and total count of all packets that hased
 	// to this location at every single bucket. If the incoming flow that hashes here
 	// (only one hash function) matches the key, we increment "count" otherwise we

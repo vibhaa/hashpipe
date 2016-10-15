@@ -417,17 +417,22 @@ public class TopKIdentifier{
 				// track the unique lost flows
 				CountMinWithCache cmsketch = null;
 				SampleAndHold flowMemoryFromSampling = null;
+				UnivMon univmon = null;
 				//double kCount = lostPacketStream.size() * k[k_index];
 				double samplingProb = 1.8 * totalMemory/(double) inputPacketStream.size(); /*(1 - Math.pow(1 - accuracy, 1/kCount))*/
 
 				if (type == SummaryStructureType.SampleAndHold)
 					flowMemoryFromSampling = new SampleAndHold(totalMemory, type, inputPacketStream.size(), samplingProb);
+				else if (type == SummaryStructureType.UnivMon)
+					univmon = new UnivMon(totalMemory, type, inputPacketStream.size(), k[k_index]);
 				else
-					cmsketch = new CountMinWithCache(totalMemory, type, inputPacketStream.size(), D, cacheSize[k_index], threshold);
+					cmsketch = new CountMinWithCache(totalMemory, type, inputPacketStream.size(), D, cacheSize[k_index], threshold, k[k_index]);
 
 				for (Packet p : inputPacketStream){
 					if (type == SummaryStructureType.SampleAndHold)
 						flowMemoryFromSampling.processData(p.getSrcIp());
+					else if (type == SummaryStructureType.UnivMon)
+						univmon.processData(p.getSrcIp());
 					else
 						cmsketch.processData(p.getSrcIp(), thr_totalPackets);
 				}
@@ -438,6 +443,14 @@ public class TopKIdentifier{
 					for (Long f : flowMemoryFromSampling.getBuckets().keySet()){
 						outputFlowsList.add(new FlowWithCount(f, flowMemoryFromSampling.getBuckets().get(f)));
 					}
+				}
+				else if (type == SummaryStructureType.UnivMon){
+					for (long f : univmon.getHeavyHitters().keySet())
+						outputFlowsList.add(new FlowWithCount(f, univmon.getHeavyHitters().get(f)));
+				}
+				else if (type == SummaryStructureType.CountMinWithHeap){
+					for (long f : cmsketch.getHeavyHitters().keySet())
+						outputFlowsList.add(new FlowWithCount(f, cmsketch.getHeavyHitters().get(f)));
 				}
 				/*else { //CMSKETCH
 					//get the heavy hitters and clean them up
@@ -467,7 +480,7 @@ public class TopKIdentifier{
 				Arrays.sort(outputFlowBuckets);
 
 				observedHH = new HashMap<Long, Long>();
-				for (int i = 0; i < k[k_index]; i++){
+				for (int i = 0; i < outputFlowBuckets.length && i < k[k_index]; i++){
 					observedHH.put(outputFlowBuckets[i].flowid, outputFlowBuckets[i].count);
 				}
 				observedSize[k_index] = observedHH.size();
@@ -487,9 +500,16 @@ public class TopKIdentifier{
 
 
 				// get occupancy and number of notifications to the controller
-				if (type != SummaryStructureType.SampleAndHold) {
+				if (type != SummaryStructureType.SampleAndHold && type != SummaryStructureType.UnivMon) {
 					occupancy[k_index] += (float) cmsketch.getSketch().getOccupancy();
 					controllerReportCount[k_index] += (float) cmsketch.getControllerReports();
+				}
+				else if (type == SummaryStructureType.UnivMon){
+					float curOccupancy = 0;
+					for (Sketch s : univmon.getSketches())
+						curOccupancy += (float) s.getOccupancy();
+					curOccupancy /= univmon.getSketches().length;
+					occupancy[k_index] += curOccupancy;
 				}
 			
 				// compare against expected hh
@@ -606,10 +626,10 @@ public class TopKIdentifier{
 		//final int tableSize[] = {30, 75, 150, 300, 500, 900, 1200, 1500, 2000};
 		//final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024, 2048/*, 4096, 8192*/};
 		//final int k[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750};
-		final int k[] = {300/*150, 300, 450, 600*/};
+		final int k[] = {20, 50, 100, 150, 200, 300/*150, 300, 450, 600*/};
 		//final int k[] = {5040, 2520, 1260, 630, 315, 155};
 		//final int tableSize[] = {2520/*, 5040, 7560/*, 10080*/}; // LCM of the first 12 integers
-		final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500};
+		final int tableSize[] = {5000/*, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500*/};
 		//final int tableSize[] = {200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
 		//final int tableSize[] = {64};
 
@@ -647,6 +667,12 @@ public class TopKIdentifier{
 				if (args[3].contains("SampleAndHold")) {
 					runTrialsPerK(SummaryStructureType.SampleAndHold, inputPacketStream, k, tableSize[tableSize_index], 0, 0);
 					continue;
+				}
+				else if (args[3].contains("UnivMon")){
+					runTrialsPerK(SummaryStructureType.UnivMon, inputPacketStream, k, tableSize[tableSize_index], 0, 0);
+				}
+				else if (args[3].contains("CMHeap")){
+					runTrialsPerK(SummaryStructureType.CountMinWithHeap, inputPacketStream, k, tableSize[tableSize_index], 5, 0);
 				}
 			}
 		}

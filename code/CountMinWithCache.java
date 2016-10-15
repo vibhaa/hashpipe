@@ -22,8 +22,9 @@ public class CountMinWithCache{
 
 	private final double threshold;
 	private int controllerAction;
+	private int k;
 
-	public CountMinWithCache(int totalMemory, SummaryStructureType type, int numberOfFlows, int D, int cacheSize, double threshold){
+	public CountMinWithCache(int totalMemory, SummaryStructureType type, int numberOfFlows, int D, int cacheSize, double threshold, int k){
 		this.tableSize = tableSize;
 		this.numHashFunctions = D;
 		droppedPacketInfoCount = 0;
@@ -34,6 +35,7 @@ public class CountMinWithCache{
 		this.type = type;
 		this.cacheSize = cacheSize;
 		this.threshold = threshold;
+		this.k = k;
 		
 		cache = new FlowWithCount[cacheSize];		
 		for (int j = 0; j < cacheSize; j++){
@@ -88,6 +90,24 @@ public class CountMinWithCache{
 					heavyhitterList.put(key, countMinSketch.estimateCount(key));
 				}
 				controllerAction++;
+			}
+			else if (type == SummaryStructureType.CountMinWithHeap){
+				long minKey = -1;
+				long minCount = -1;
+				boolean flag = false;
+				for (Long k : heavyhitterList.keySet()){
+					if (flag == false || heavyhitterList.get(k) < minCount){
+						minCount = heavyhitterList.get(k);
+						minKey = k;
+						flag = true;
+					}
+				}
+				if (heavyhitterList.size() == k && countMinSketch.estimateCount(key) > minCount){
+					heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					heavyhitterList.remove(minKey);
+				} 
+				else if (heavyhitterList.size() < k)
+					heavyhitterList.put(key, countMinSketch.estimateCount(key));
 			}
 		}
 	}
