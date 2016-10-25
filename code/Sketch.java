@@ -29,6 +29,7 @@ public class Sketch{
 	private final int[] hashSeedA2;
 	private final int[] hashSeedB2;
 	private final int p;
+	private final long primeNumber;
 
 	public Sketch(int size, int numberOfHashFunctions, int totalNumberOfKeys){
 		this.size = size;
@@ -39,6 +40,9 @@ public class Sketch{
 		this.totalNumberOfPackets = 0;
 
 		this.p = 9029;
+		primeNumber = 39916801;
+
+
 		final int hashA[] = { 	10273, 8941, 11597, 9203, 12289, 11779,
 								421, 	199, 	79,	83,	89,	97,	101,	103,	107,	109,	113,
 								127,	131,	137,	139,	149,	151,	157,	163,	167,	173,
@@ -69,9 +73,16 @@ public class Sketch{
 								1523,	1531,	1543,	1549,	1553,	1559,	1567,	1571,	1579,	1583,
 								1597,	1601,	1607,	1609,	1613,	1619,	1621,	1627,	1637,	1657,
 								3221, 	3229, 	3251, 	3253, 	3257,	3259, 	3271, 	3299,	3301, 	3307, 
+		
 								3313, 	3319, 	3323, 	3329, 	3331};
-		this.hashSeedA = hashA;
-		this.hashSeedB = hashB;
+		hashSeedA = new int[numberOfHashFunctions];
+		hashSeedB = new int[numberOfHashFunctions];
+		for (int i = 0; i < numberOfHashFunctions; i++){
+			hashSeedA[i] = (int) (Math.random()* primeNumber);
+			hashSeedB[i] = (int) (Math.random() * primeNumber);
+		}
+		//this.hashSeedA = hashA;
+		//this.hashSeedB = hashB;
 
 		/*this.p = 32561; /*20117;
 		int hashA[] = {  701, 557, 1667, 773, 2017, 1783, 883, 307, 199, 2719, 2851, 1453, 421, 149, 311, 8461, 9839, 10597, 9241, 7027, 11329};
@@ -122,7 +133,7 @@ public class Sketch{
 	private int hash(long word, int hashFunctionIndex){
 		//System.out.println(word.substring(25));
 		//System.out.println(hashSeedA[hashFunctionIndex]*word + hashSeedB[hashFunctionIndex]);
-		return (int) ((hashSeedA[hashFunctionIndex]*word + hashSeedB[hashFunctionIndex]) % p) % size;
+		return (int) ((hashSeedA[hashFunctionIndex]*word + hashSeedB[hashFunctionIndex]) % primeNumber) % size;
 	}
 
 	private int hashTwo(long word, int hashFunctionIndex){

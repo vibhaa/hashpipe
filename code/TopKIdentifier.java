@@ -35,6 +35,8 @@ public class TopKIdentifier{
 		long bigLoserPacketCount[] = new long[k.length];
 		float occupiedSlots[] = new float[k.length];
 		float duplicates[] = new float[k.length];
+		double keysSeen[] = new double[k.length];
+		double frequencyByTable[][] = new double[k.length][D];
 
 		// track the unique lost flows
 		DLeftHashTable lostFlowHashTable = null;
@@ -165,6 +167,15 @@ public class TopKIdentifier{
 					expectedHH.add(inputFlowArray[i].flowid);
 				}
 
+				for (int i = 0; i < outputFlowBuckets.length; i++){
+					if (expectedHH.contains(outputFlowBuckets[i].flowid) == false){
+						for (int j = 0; j < D; j++){
+							if (i >= j*tableSize/D && i < (j+1)*tableSize/D)
+								frequencyByTable[k_index][j]++;
+						}
+					}
+				}
+
 				double presentInTable = 0;
 				for (long flowid : expectedHH){
 					if (!observedHH.containsKey(flowid)){
@@ -229,6 +240,14 @@ public class TopKIdentifier{
 				cumDeviation[k_index] += deviation/denominator;
 				underEstimateAmount[k_index] += curUnderEstimation/denominator;
 				//System.out.println(numWithin1Dev[k_index] + " " + numWithin2Dev[k_index]);
+
+				/*if (type == SummaryStructureType.OverallMinReplacement){
+					int[] keysPerBucket = lostFlowHashTable.getKeysPerBucket();
+					for (int num : keysPerBucket){
+						System.err.println(num);
+						keysSeen[k_index] += num;
+					}
+				}*/
 			}
 		}
 
@@ -240,7 +259,14 @@ public class TopKIdentifier{
 			System.out.print("," + cumDeviation[k_index]/numberOfTrials + "," + occupiedSlots[k_index]/tableSize/numberOfTrials + "," + duplicates[k_index]/tableSize/numberOfTrials);
 			System.out.print("," + (double) missingFromTable[k_index]/numberOfTrials/expectedSize[k_index] + "," + cumProblematicEvictionFraction/numberOfTrials);
 			System.out.print("," + theoreticalProb[k_index] + "," + (double) numWithin1Dev[k_index] + "," + (double) numWithin2Dev[k_index]/numberOfTrials + ",");
-			System.out.println((double) underEstimatedFlows[k_index]/numberOfTrials/observedSize[k_index] + "," + (double) underEstimateAmount[k_index]/numberOfTrials);
+			System.out.print((double) underEstimatedFlows[k_index]/numberOfTrials/observedSize[k_index] + "," + (double) underEstimateAmount[k_index]/numberOfTrials);
+			for (int i = 0; i < D; i++){
+				System.out.print("," + frequencyByTable[k_index][i]);
+			}
+			if (type == SummaryStructureType.OverallMinReplacement){
+				System.out.print("," + keysSeen[k_index]/numberOfTrials/tableSize);
+			}
+			System.out.println();
 		}
 
 		/*for (int r : rankToFrequency.keySet())
@@ -350,6 +376,7 @@ public class TopKIdentifier{
 
 	public static void runTrialsPerK(SummaryStructureType type, ArrayList<Packet> inputPacketStream, int[] k, int totalMemory, int D, long thr_totalPackets)
 	{
+		double thres[] = {0.002186, 0.001238, 0.000821, 0.000708, 0.000615, 0.000459};
 		int numberOfTrials = 1000;
 		int observedSize[] = new int[k.length];
 		int expectedSize[] = new int[k.length];
@@ -408,11 +435,12 @@ public class TopKIdentifier{
 				expectedSize[k_index] = expectedHH.size();
 
 				// FIX THIS
-				double threshold = 0.002;
+				double threshold = 0.000;
 				// FIX
 
-				cacheSize[k_index] = (int) (1.0/threshold) + 20;/* (1.25*expectedSize[k_index]);*/
 
+				//cacheSize[k_index] = (int) (1.0/threshold) + 20;/* (1.25*expectedSize[k_index]);*/
+				cacheSize[k_index] = 530;
 				//System.out.println("cacheSize" + cacheSize);
 				// track the unique lost flows
 				CountMinWithCache cmsketch = null;
@@ -424,7 +452,7 @@ public class TopKIdentifier{
 				if (type == SummaryStructureType.SampleAndHold)
 					flowMemoryFromSampling = new SampleAndHold(totalMemory, type, inputPacketStream.size(), samplingProb);
 				else if (type == SummaryStructureType.UnivMon)
-					univmon = new UnivMon(totalMemory, type, inputPacketStream.size(), k[k_index]);
+					univmon = new UnivMon(totalMemory, type, inputPacketStream.size(), k[k_index], thres[k_index]);
 				else
 					cmsketch = new CountMinWithCache(totalMemory, type, inputPacketStream.size(), D, cacheSize[k_index], threshold, k[k_index]);
 
@@ -594,7 +622,7 @@ public class TopKIdentifier{
 		else
 			inputPacketStream = FlowDataParser.parsePacketData(args[0]);
 
-		double[] thetaValues = {807.7544426, 1218.026797, 1412.429379, 1626.01626, 1904.761905, 2178.649237, 2427.184466, 2702.702703, 2898.550725, 3174.603175, 3472.222222, 3846.153846, 4201.680672, 4484.304933, 4901.960784};		
+		//double[] thetaValues = {807.7544426, 1218.026797, 1412.429379, 1626.01626, 1904.761905, 2178.649237, 2427.184466, 2702.702703, 2898.550725, 3174.603175, 3472.222222, 3846.153846, 4201.680672, 4484.304933, 4901.960784};		
 
 		// read the flows to be lost from a file mentioned in the command line and create a new stream with that flow lost
 		int totalPacketsLost = 0;
@@ -626,10 +654,13 @@ public class TopKIdentifier{
 		//final int tableSize[] = {30, 75, 150, 300, 500, 900, 1200, 1500, 2000};
 		//final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024, 2048/*, 4096, 8192*/};
 		//final int k[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750};
-		final int k[] = {20, 50, 100, 150, 200, 300/*150, 300, 450, 600*/};
+		//final int k[] = {/*, 50, 100, 150, 200, 300/*150, 300, 450, 600*/};
+		final int k[] = {100, 200, 400, 800, 1600};
+		
 		//final int k[] = {5040, 2520, 1260, 630, 315, 155};
 		//final int tableSize[] = {2520/*, 5040, 7560/*, 10080*/}; // LCM of the first 12 integers
-		final int tableSize[] = {5000/*, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500*/};
+		//final int tableSize[] = {1200/*, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500*/};
+		final int tableSize[] = {12500, 25000, 50000, 100000, 200000, 400000, 800000};
 		//final int tableSize[] = {200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
 		//final int tableSize[] = {64};
 
@@ -638,7 +669,7 @@ public class TopKIdentifier{
 			System.out.print("reported number, hhReportedFraction, deviation, table occupancy, duplicates, fraction missing in table, cumProblematicEvictionFraction");
 			System.out.println(" theoretical Prob, P(within 1 stddev), P(within 2 stddev), numUnderEstimated, underEstimateAmount");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
-				for (int D = 6; D <= 6; D++){
+				for (int D = 5; D <= 5; D++){
 				//for (int D = 2; D <= 12; D++){
 					if (D == 11 || D == 13)
 						continue;

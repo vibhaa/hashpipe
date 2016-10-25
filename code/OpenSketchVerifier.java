@@ -42,7 +42,7 @@ public class OpenSketchVerifier{
 			{
 				line = scanner.nextLine();
 				fields = line.split(" ");
-				if (fields[0].contains("threshold"))
+				if (fields[0].contains("threshold:"))
 					threshold = Integer.parseInt(fields[1]);
 				else if (fields[0].equals("is") && fields[1].equals("heavy")){
 					String srcip = fields[2].substring(2, fields[2].length() - 1);

@@ -15,6 +15,7 @@ public class DLeftHashTable{
 
 	private Sketch countMinSketch;
 	private FlowWithCount[] buckets;
+	private int[] keysBeenInIndex;
 	private long[] flowIdBuckets;
 	private HashSet<Long> bloomfilter;
 
@@ -53,6 +54,7 @@ public class DLeftHashTable{
 
 		if (type == SummaryStructureType.DLeft || type == SummaryStructureType.BasicHeuristic || type == SummaryStructureType.MinReplacementHeuristic || type == SummaryStructureType.OverallMinReplacement){
 			buckets = new FlowWithCount[tableSize];
+			keysBeenInIndex = new int[tableSize];
 		
 			for (int j = 0; j < tableSize; j++){
 				buckets[j] = new FlowWithCount(0, 0);
@@ -237,6 +239,7 @@ public class DLeftHashTable{
 		/* uniform hashing into a chunk N/d and then dependent picking of the choice*/
 		int k = 0;
 		int firstLocation = 0; // how to track this in hardware
+		boolean notMatched = true;
 
 		if (key == 0)
 		{
@@ -251,6 +254,7 @@ public class DLeftHashTable{
 			for (k = 0; k < buckets.length; k++){
 				if (buckets[k].flowid == key){
 					buckets[k].count++;
+					//keysBeenInIndex[k]++;
 					return;
 				}
 
@@ -260,8 +264,27 @@ public class DLeftHashTable{
 				}
 			}
 
+			if (minValue != 0){
+				if (actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
+					//System.out.println("incorrect eviction");
+					problematicEvictions++;
+				}
+				totalEvictions++;
+			}
+
+
+			if (rankToFrequency != null && minValue!= 0 /*&& actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)*/){
+				int curRank = flowToRank.get(buckets[minIndex].flowid);
+				if (rankToFrequency.containsKey(curRank)){
+					rankToFrequency.put(curRank, rankToFrequency.get(curRank) + 1);
+				}
+				else
+					rankToFrequency.put(curRank, 1);
+			}	
+
 			buckets[minIndex].flowid = key;
 			buckets[minIndex].count += 1;
+
 			return;
 		}
 
@@ -413,6 +436,7 @@ public class DLeftHashTable{
 			}
 			
 			else if (type == SummaryStructureType.RollingMinSingleLookup || type == SummaryStructureType.AsymmetricDleftSingleLookUp){
+
 					// new flow - this may have been zeroed out from the previous case, so idk how to handle that in hardware
 					if (buckets[index].flowid == 0 && k == 0) {
 						buckets[index].flowid = key;
@@ -422,6 +446,7 @@ public class DLeftHashTable{
 					else if (buckets[index].flowid == 0 && k != 0) {
 						buckets[index].flowid = keyBeingCarried;
 						buckets[index].count = valueBeingCarried;
+
 						break;
 					}
 					else if (buckets[index].flowid == keyBeingCarried){ // coalesce the values
@@ -430,6 +455,7 @@ public class DLeftHashTable{
 					}
 
 					if (buckets[index].flowid == key && k == 0){ // updated value
+						notMatched = false;
 						buckets[index].count++;
 
 						/*if (buckets[index].flowid == 1110210987)
@@ -450,6 +476,7 @@ public class DLeftHashTable{
 						if (buckets[index].flowid == 0 && buckets[index].count != 0){
 							System.out.println("inconsistency case 3");
 						}
+						firstLocation = index;
 
 						/*if (buckets[index].flowid == 1110210987)
 								System.out.println("inserting in table1 trial #" + keynum + " value" + buckets[index].count);*/
@@ -483,6 +510,9 @@ public class DLeftHashTable{
 					}
 					totalEvictions++;
 
+					/*if (k == D - 1 && notMatched)
+						buckets[firstLocation].count += valueBeingCarried;*/
+
 					if (k == D - 1 && rankToFrequency != null /*&& actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)*/){
 						int curRank = flowToRank.get(keyBeingCarried);
 						if (rankToFrequency.containsKey(curRank)){
@@ -490,7 +520,9 @@ public class DLeftHashTable{
 						}
 						else
 							rankToFrequency.put(curRank, 1);
-					}					
+					}
+
+
 					
 				/*}
 				else{
@@ -676,6 +708,10 @@ public class DLeftHashTable{
 
 	public FlowWithCount[] getBuckets(){
 		return buckets;
+	}
+
+	public int[] getKeysPerBucket(){
+		return keysBeenInIndex;
 	}
 
 	public void printBuckets(){

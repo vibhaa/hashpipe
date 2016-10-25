@@ -381,7 +381,7 @@ public class LossyFlowIdentifier{
 			for (int t = 0; t < numberOfTrials; t++){
 				currentHH = new HashMap<Long, Long>();
 				// track the unique lost flows
-				CountMinWithCache cmsketch = new CountMinWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize, threshold);
+				CountMinWithCache cmsketch = new CountMinWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize, threshold, 0);
 				int count = 0;
 				for (Packet p : lostPacketStream){
 					cmsketch.processData(p.getSrcIp(), thr_totalPackets);
@@ -493,14 +493,14 @@ public class LossyFlowIdentifier{
 				SampleAndHold flowMemoryFromSampling = null;
 				UnivMon univmon = null;
 				double thresholdCount = lostPacketStream.size() * threshold[thr_index];
-				double samplingProb = 1.8 * totalMemory/(double) lostPacketStream.size(); /*(1 - Math.pow(1 - accuracy, 1/thresholdCount))*/
+				double samplingProb = 2.5* totalMemory/(double) lostPacketStream.size(); /*(1 - Math.pow(1 - accuracy, 1/thresholdCount))*/
 
 				if (type == SummaryStructureType.SampleAndHold)
 					flowMemoryFromSampling = new SampleAndHold(totalMemory, type, lostPacketStream.size(), samplingProb);
 				else if (type == SummaryStructureType.UnivMon)
-					univmon = new UnivMon(totalMemory, type, lostPacketStream.size(), threshold[thr_index]);
+					univmon = new UnivMon(totalMemory, type, lostPacketStream.size(), 0, threshold[thr_index]);
 				else
-					cmsketch = new CountMinWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize[thr_index], threshold[thr_index]);
+					cmsketch = new CountMinWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize[thr_index], threshold[thr_index], 0);
 
 				for (Packet p : lostPacketStream){
 					if (type == SummaryStructureType.SampleAndHold)
@@ -659,7 +659,7 @@ public class LossyFlowIdentifier{
 
 
 	public static void getCMSketchCounters(ArrayList<Packet> lostPacketStream, int totalMemory, int D, long thr_totalPackets){
-		CountMinWithCache cmcache = new CountMinWithCache(totalMemory, SummaryStructureType.CountMinCacheNoKeys, lostPacketStream.size(), D, 10, 0.003);
+		CountMinWithCache cmcache = new CountMinWithCache(totalMemory, SummaryStructureType.CountMinCacheNoKeys, lostPacketStream.size(), D, 10, 0.003, 0);
 
 		for (Packet p : lostPacketStream){
 			cmcache.processData(p.getSrcIp(), thr_totalPackets);
@@ -722,7 +722,7 @@ public class LossyFlowIdentifier{
 		// perform the tracking of orginal packets at the entry point so that we can find the perflow size
 		Sketch originalPacketSketch = new Sketch(500, 3, originalPacketStream.size());
 		for (Packet p : originalPacketStream){
-			originalPacketSketch.updateCountInSketch(p);
+			originalPacketSketch.updateCountInSketch(p.getSrcIp());
 		}
 
 		// collect stream data at the observation point where the statistics are collected for the link
@@ -733,15 +733,21 @@ public class LossyFlowIdentifier{
 		//final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024, 2048/*, 4096, 8192*/};
 		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
 		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
-		final double threshold[] = {0.00065, 0.0006, 0.00055, 0.00005, 0.00045, 0.0004};
-		final int tableSize[] = {2520/*, 5040, 7560, /*10080*/};
+		//final double threshold[] = {0.000459, 0.00065, 0.0006, 0.00055, 0.00005, 0.00045, 0.0004};
+		//final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500};
+		final int tableSize[] = {12500, 25000, 50000, 100000, 200000, 400000, 800000};
+		final double threshold[] = {817, 614, 370, 192, 87};
+		//final int tableSize[] = {300, 600, 900, 1200/*, 2520/*, 5040, 7560, /*10080*/};
 		//final int tableSize[] = {64};
+
+		for (int i = 0; i < threshold.length; i++)
+			threshold[i] /= 1000000;
 
 		if (args[2].equals("runTrial"))	{
 			System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 				//for (int thr_index = 0; thr_index < threshold.length; thr_index++){
-					for (int D = 2; D <= 15; D++){
+					for (int D = 5; D <= 5; D++){
 						if (D == 11 || D == 13)
 							continue;
 						// change the expected flows to be lost accordingly
@@ -767,7 +773,7 @@ public class LossyFlowIdentifier{
 						//runLossIdentificationTrials(SummaryStructureType.EvictionWithCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 						//runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 						//runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.RollingMinSingleLookup, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureTdype.RollingMinSingleLookup, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 					}
 				//}
 			}
@@ -789,7 +795,7 @@ public class LossyFlowIdentifier{
 				}
 				
 				for (long thr_totalPackets = 0; thr_totalPackets <= 0; thr_totalPackets += 100000){
-					for (int D = 3; D <= 3; D++){
+					for (int D = 5; D <= 5; D++){
 						//System.out.println(expectedHH.size() + " " + totalPacketsLost);
 				 		//System.out.println(totalPacketsLost + " " + count);
 
