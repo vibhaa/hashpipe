@@ -1,20 +1,21 @@
 import java.util.*;
+import java.math.BigInteger;
 
 /* hash table simulation to track the unique flows experiencing loss
 	using the D-Left hashing procedure where each flow id is hashed exactly
 	d times to generate d locations where the flow and its loss might be
 	stored* */
 
-public class CountMinWithCache{
+public class CountMinFlowIdWithCache{
 	private int tableSize;
 	private int droppedPacketInfoCount;
 	private int cumDroppedPacketInfoCount;
 	private int totalNumberOfPackets;
 
 	private Sketch countMinSketch;
-	private FlowWithCount[] cache;
+	private FlowIdWithCount[] cache;
 	private int cacheSize;
-	private HashMap<Long, Long> heavyhitterList;
+	private HashMap<String, Long> heavyhitterList;
 	private boolean[] reportedToController;
 
 	private SummaryStructureType type;
@@ -23,8 +24,11 @@ public class CountMinWithCache{
 	private final double threshold;
 	private int controllerAction;
 	private int k;
+	private BigInteger[] hashBigA;
+	private BigInteger[] hashBigB;
+	private BigInteger bigP;
 
-	public CountMinWithCache(int totalMemory, SummaryStructureType type, int numberOfFlows, int D, int cacheSize, double threshold, int k){
+	public CountMinFlowIdWithCache(int totalMemory, SummaryStructureType type, int numberOfFlows, int D, int cacheSize, double threshold, int k){
 		this.tableSize = tableSize;
 		this.numHashFunctions = D;
 		droppedPacketInfoCount = 0;
@@ -37,22 +41,30 @@ public class CountMinWithCache{
 		this.threshold = threshold;
 		this.k = k;
 		
-		cache = new FlowWithCount[cacheSize];		
+		cache = new FlowIdWithCount[cacheSize];		
 		for (int j = 0; j < cacheSize; j++){
-			cache[j] = new FlowWithCount(0, 0);
+			cache[j] = new FlowIdWithCount("", 0);
 		}
 
 		if (type == SummaryStructureType.CountMinCacheNoKeys)
 			countMinSketch = new Sketch((totalMemory /*- cacheSize*/)/numHashFunctions, numHashFunctions, numberOfFlows);
 		else
 			countMinSketch = new Sketch((totalMemory - 8*cacheSize)/numHashFunctions, numHashFunctions, numberOfFlows);
-		heavyhitterList = new HashMap<Long, Long>();
+		heavyhitterList = new HashMap<String, Long>();
 		
 		if (type == SummaryStructureType.CountMinCacheNoKeysReportedBit)
 			reportedToController = new boolean[cacheSize];
+
+		hashBigA = new BigInteger[numHashFunctions];
+		hashBigB = new BigInteger[numHashFunctions];
+		bigP = new BigInteger(Long.toString(39916801));
+		for (int i = 0; i < numHashFunctions; i++){
+			hashBigA[i] = new BigInteger(Integer.toString((int) (Math.random()* 39916801)));
+			hashBigB[i] = new BigInteger(Integer.toString((int) (Math.random()* 39916801)));
+		}
 	}
 
-	public void processData(long key, long thr_totalPackets){
+	public void processData(String key, long thr_totalPackets){
 		// hardcoded values for the hash functions given that the number of flows is 100
 		final int P = 5171;
 		final int hashB[] = {  199, 2719, 2851, 1453};
@@ -62,58 +74,58 @@ public class CountMinWithCache{
 		// update the count-min sketch for this flowid
 		// TODO: modify this to update and read minimum parallelly so that
 		// there is no going back to previously updated stages involved
-		countMinSketch.updateCount(key);
+		countMinSketch.updateCountInSketchBigHash(key);
 
-		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCount(key) > threshold * totalNumberOfPackets){
+		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCountBigHash(key) > threshold * totalNumberOfPackets){
 			/* hash to find index in cache and update*/
-			int curKeyIndex = (int) ((hashA[0]*key + hashB[0]) % P) % (cacheSize);
-			/*BigInteger bigint = BigInteger(key);
+			//int curKeyIndex = (int) ((hashA[0]*key + hashB[0]) % P) % (cacheSize);
+			BigInteger bigint = new BigInteger(key);
 			bigint = bigint.multiply(hashBigA[0]);
 			bigint = bigint.add(hashBigB[0]);
 			bigint = bigint.mod(bigP);
-			bigint = bigint.mod(BigInteger(Integer.toString(cacheSize)));
-			int curKeyIndex = bigint.intValue();*/
+			bigint = bigint.mod(new BigInteger(Integer.toString(cacheSize)));
+			int curKeyIndex = bigint.intValue();
 
 
 			if (type == SummaryStructureType.CountMinCacheWithKeys){
-				if (cache[curKeyIndex].flowid != key){
+				if (!key.equals(cache[curKeyIndex].flowid)){
 					// new key
 					cache[curKeyIndex].flowid = key;
-					cache[curKeyIndex].count = countMinSketch.estimateCount(key) - 1;
-					heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					cache[curKeyIndex].count = countMinSketch.estimateCountBigHash(key) - 1;
+					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 					controllerAction++;
 				}
 
 				if (cache[curKeyIndex].count == 0)
-					cache[curKeyIndex].count = countMinSketch.estimateCount(key);
+					cache[curKeyIndex].count = countMinSketch.estimateCountBigHash(key);
 				else
 					cache[curKeyIndex].count++;
 			}
 			else if (type == SummaryStructureType.CountMinCacheNoKeys){
 				if (heavyhitterList.containsKey(key)){
-					heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 				} else {
-					heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 				}
 				controllerAction++;
 			}
 			else if (type == SummaryStructureType.CountMinWithHeap){
-				long minKey = -1;
+				String minKey = "";
 				long minCount = -1;
 				boolean flag = false;
-				for (Long k : heavyhitterList.keySet()){
+				for (String k : heavyhitterList.keySet()){
 					if (flag == false || heavyhitterList.get(k) < minCount){
 						minCount = heavyhitterList.get(k);
 						minKey = k;
 						flag = true;
 					}
 				}
-				if (heavyhitterList.size() == k && countMinSketch.estimateCount(key) > minCount){
-					heavyhitterList.put(key, countMinSketch.estimateCount(key));
+				if (heavyhitterList.size() == k && countMinSketch.estimateCountBigHash(key) > minCount){
+					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 					heavyhitterList.remove(minKey);
 				} 
 				else if (heavyhitterList.size() < k)
-					heavyhitterList.put(key, countMinSketch.estimateCount(key));
+					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 			}
 		}
 	}
@@ -122,11 +134,11 @@ public class CountMinWithCache{
 		return droppedPacketInfoCount;
 	}
 
-	public FlowWithCount[] getCache(){
+	public FlowIdWithCount[] getCache(){
 		return cache;
 	}
 
-	public HashMap<Long, Long> getHeavyHitters(){
+	public HashMap<String, Long> getHeavyHitters(){
 		return heavyhitterList;
 	}
 

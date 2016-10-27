@@ -4,29 +4,33 @@ import java.util.*;
    the key fields from the packet*/
 public class Packet{
 	private long srcip;
-	//private long dstip;
-	//private String srcPort;
-	//private String dstPort;
-	//private String protocol;
+	private long dstip;
+	private String srcPort;
+	private String dstPort;
+	private String protocol;
 
 	public Packet(long srcip, long dstip, String srcPort, String dstPort, String protocol){
 		this.srcip = srcip;
-		//this.dstip = dstip;
-		//this.srcPort = new String(srcPort);
-		//this.dstPort = new String(dstPort);
-		//this.protocol = new String(protocol);
+		this.dstip = dstip;
+		this.srcPort = new String(srcPort);
+		this.dstPort = new String(dstPort);
+		this.protocol = new String(protocol);
 	}
 
 	public long getSrcIp(){
 		return srcip;
 	}
 
-	/*public long getDstIp(){
+	public long getDstIp(){
 		return dstip;
-	}*/
+	}
 
 	public String fivetuple(){
-		return Long.toString(srcip); /* + long.toString(dstip) + srcPort + dstPort + protocol;*/
+		return Long.toString(srcip) + Long.toString(dstip) + srcPort + dstPort + protocol;
+	}
+
+	public String getFlowId(){
+		return Long.toString(srcip);
 	}
 
 	public static ArrayList<Packet> computeDiff(ArrayList<Packet> startPointPackets, HashSet<Packet> endPointPackets){

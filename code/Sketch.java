@@ -1,5 +1,6 @@
 import java.*;
 import java.util.Arrays;
+import java.math.BigInteger;
 
 /* count min sketch that is used to maintain a summary data structure
    to estimate the frequency of occurence of certain items in a data
@@ -26,9 +27,12 @@ public class Sketch{
 	//used to form a linear combination to get a hashfunction of the form ((ax + b) %p) %size
 	private final int[] hashSeedA;
 	private final int[] hashSeedB;
+	private final BigInteger[] bigHashSeedA;
+	private final BigInteger[] bigHashSeedB;
 	private final int[] hashSeedA2;
 	private final int[] hashSeedB2;
 	private final int p;
+	private final BigInteger bigP;
 	private final long primeNumber;
 
 	public Sketch(int size, int numberOfHashFunctions, int totalNumberOfKeys){
@@ -41,6 +45,7 @@ public class Sketch{
 
 		this.p = 9029;
 		primeNumber = 39916801;
+		bigP = new BigInteger(Long.toString(primeNumber));
 
 
 		final int hashA[] = { 	10273, 8941, 11597, 9203, 12289, 11779,
@@ -80,6 +85,13 @@ public class Sketch{
 		for (int i = 0; i < numberOfHashFunctions; i++){
 			hashSeedA[i] = (int) (Math.random()* primeNumber);
 			hashSeedB[i] = (int) (Math.random() * primeNumber);
+		}
+
+		bigHashSeedA = new BigInteger[numberOfHashFunctions];
+		bigHashSeedB = new BigInteger[numberOfHashFunctions];
+		for (int i = 0; i < numberOfHashFunctions; i++){
+			bigHashSeedA[i] = new BigInteger(Long.toString((long) (Math.random()* primeNumber)));
+			bigHashSeedB[i] = new BigInteger(Long.toString((long) (Math.random() * primeNumber)));
 		}
 		//this.hashSeedA = hashA;
 		//this.hashSeedB = hashB;
@@ -136,6 +148,18 @@ public class Sketch{
 		return (int) ((hashSeedA[hashFunctionIndex]*word + hashSeedB[hashFunctionIndex]) % primeNumber) % size;
 	}
 
+	private int bighash(String id, int hashFunctionIndex){
+		//System.out.println(word.substring(25));
+		//System.out.println(hashSeedA[hashFunctionIndex]*word + hashSeedB[hashFunctionIndex]);
+		BigInteger bigint = new BigInteger(id);
+		bigint = bigint.multiply(bigHashSeedA[hashFunctionIndex]);
+		bigint = bigint.add(bigHashSeedB[hashFunctionIndex]);
+		bigint = bigint.mod(bigP);
+		bigint = bigint.mod(new BigInteger(Integer.toString(size)));
+		int curKeyIndex = bigint.intValue();
+		return curKeyIndex;
+	}
+
 	private int hashTwo(long word, int hashFunctionIndex){
 		//System.out.println(word.substring(25));
 		//System.out.println(hashSeedA[hashFunctionIndex]*word + hashSeedB[hashFunctionIndex]);
@@ -169,6 +193,23 @@ public class Sketch{
 		for (int i = 0; i < numberOfHashFunctions; i++){
 			// hash word by word numberofHashFunctions times independently
 			int hashbucket = hash(flowid, i);
+			hashMatrix[i][hashbucket]++; 
+		}
+	}
+
+	// update the sketch to reflect that a packet with the id has been received
+	// asume updateCount is called on a packet only once
+	// return an estimate for the flowid associated with the packet p
+	public void updateCountInSketchBigHash(String flowid){
+		//long flowid = p.getSrcIp();
+		//String flowid = p.fivetuple();
+
+		totalNumberOfPackets++;
+
+		// hash the ip and update the appropriate counters
+		for (int i = 0; i < numberOfHashFunctions; i++){
+			// hash word by word numberofHashFunctions times independently
+			int hashbucket = bighash(flowid, i);
 			hashMatrix[i][hashbucket]++; 
 		}
 	}
@@ -248,6 +289,18 @@ public class Sketch{
 		long min = hashMatrix[0][hash(flowid, 0)];
 		for (int i = 1; i < numberOfHashFunctions; i++){
 			int hashbucket = hash(flowid, i);
+			if (hashMatrix[i][hashbucket] < min)
+				min = hashMatrix[i][hashbucket];
+		}
+		return min;
+	}
+
+	// query an estimate for the loss of this flow identified by its flow id
+	// using the count-min approach
+	public long estimateCountBigHash(String flowid){
+		long min = hashMatrix[0][bighash(flowid, 0)];
+		for (int i = 1; i < numberOfHashFunctions; i++){
+			int hashbucket = bighash(flowid, i);
 			if (hashMatrix[i][hashbucket] < min)
 				min = hashMatrix[i][hashbucket];
 		}

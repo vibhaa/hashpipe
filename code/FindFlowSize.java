@@ -21,26 +21,37 @@ public class FindFlowSize{
 
 				fields = line.split(",");
 
-				//if (fields.length < 5)
-				//	continue;
+				if (fields.length < 5)
+					continue;
 
-				String srcipString = fields[0]; // caida default
+				String srcipString = Long.toString(FlowDataParser.convertAddressToLong(fields[0])); // caida default
+				String dstipString = Long.toString(FlowDataParser.convertAddressToLong(fields[1]));;
+				fields[0] = srcipString;
+				fields[1] = dstipString;
+				String fivetuple = "";
+				for (int i = 0; i < 5; i++){
+					if (fields[i].equals("")){
+						fivetuple = "";
+						break;
+					}
+					else fivetuple += fields[i];
+				}
 				/*if (!filename.contains("Caida")){
 					srcipString = fields[3];
 				}
 
 				if (srcipString.length() == 0)
 					continue;*/
-
-				if (true){
+				String id = fivetuple;
+				if (!id.equals("")){
 					if (!filename.contains("Caida")){
 						value = Integer.parseInt(fields[11]);
 					}
 
-					if (tracker.containsKey(srcipString))
-						tracker.put(srcipString, tracker.get(srcipString) + value);
+					if (tracker.containsKey(id))
+						tracker.put(id, tracker.get(id) + value);
 					else
-						tracker.put(srcipString, value);
+						tracker.put(id, value);
 				}
 				
 			}
