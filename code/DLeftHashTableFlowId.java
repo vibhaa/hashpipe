@@ -27,6 +27,7 @@ public class DLeftHashTableFlowId{
 	private final BigInteger[] bigHashSeedA;
 	private final BigInteger[] bigHashSeedB;
 	private final BigInteger bigP;
+	private final long primeNumber;
 
 	public DLeftHashTableFlowId(int tableSize, SummaryStructureType type, int numberOfFlows, int D, HashMap<String,Integer> flowSizes){
 		this.tableSize = tableSize;
@@ -38,7 +39,7 @@ public class DLeftHashTableFlowId{
 		totalNumberOfPackets = 0;
 		this.actualFlowSizes = flowSizes;
 
-		long primeNumber = 39916801;
+		this.primeNumber = 39916801;
 		bigP = new BigInteger(Long.toString(primeNumber));
 		bigHashSeedA = new BigInteger[D];
 		bigHashSeedB = new BigInteger[D];
@@ -111,6 +112,13 @@ public class DLeftHashTableFlowId{
 	}
 
 	public int hashBig(String key, int hashFunctionIndex, int cursize){
+		/*long curHash = 0;
+		long x = 18;
+		for (int i = 0; i < key.length(); i++){
+			curHash = x*curHash + (long)(key.charAt(i));
+			curHash = curHash % primeNumber;
+		}
+		int curKeyIndex = (int) (curHash % (long) cursize);*/
 		BigInteger bigint = new BigInteger(key);
 		bigint = bigint.multiply(bigHashSeedA[hashFunctionIndex]);
 		bigint = bigint.add(bigHashSeedB[hashFunctionIndex]);
@@ -227,22 +235,22 @@ public class DLeftHashTableFlowId{
 			}
 
 			if (minValue != 0){
-				if (actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
+				/*if (actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
 					//System.out.println("incorrect eviction");
 					problematicEvictions++;
-				}
+				}*/
 				totalEvictions++;
 			}
 
 
-			if (rankToFrequency != null && minValue!= 0 /*&& actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)*/){
+			/*if (rankToFrequency != null && minValue!= 0 /*&& actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
 				int curRank = flowToRank.get(buckets[minIndex].flowid);
 				if (rankToFrequency.containsKey(curRank)){
 					rankToFrequency.put(curRank, rankToFrequency.get(curRank) + 1);
 				}
 				else
 					rankToFrequency.put(curRank, 1);
-			}	
+			}	*/
 
 			buckets[minIndex].flowid = key;
 			buckets[minIndex].count += 1;
@@ -466,23 +474,24 @@ public class DLeftHashTableFlowId{
 						}
 					}
 
-					if (actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)){
+
+					/*if (actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)){
 					//System.out.println("incorrect eviction");
 						problematicEvictions++;
-					}
+					}*/
 					totalEvictions++;
 
 					/*if (k == D - 1 && notMatched)
 						buckets[firstLocation].count += valueBeingCarried;*/
 
-					if (k == D - 1 && rankToFrequency != null /*&& actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)*/){
+					/*if (k == D - 1 && rankToFrequency != null /*&& actualFlowSizes.get(keyBeingCarried) > actualFlowSizes.get(key)){
 						int curRank = flowToRank.get(keyBeingCarried);
 						if (rankToFrequency.containsKey(curRank)){
 							rankToFrequency.put(curRank, rankToFrequency.get(curRank) + 1);
 						}
 						else
 							rankToFrequency.put(curRank, 1);
-					}
+					}*/
 
 
 					
@@ -677,20 +686,20 @@ public class DLeftHashTableFlowId{
 				droppedPacketInfoCount = droppedPacketInfoCount + (int) value;
 		}
 		else {
-			if (actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
+			/*if (actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
 				//System.out.println("incorrect eviction");
 				problematicEvictions++;
-			}
+			}*/
 			totalEvictions++;
 
-			if (rankToFrequency != null /*&& actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)*/){
+			/*if (rankToFrequency != null /*&& actualFlowSizes.get(buckets[minIndex].flowid) > actualFlowSizes.get(key)){
 				int curRank = flowToRank.get(buckets[minIndex].flowid);
 				if (rankToFrequency.containsKey(curRank)){
 					rankToFrequency.put(curRank, rankToFrequency.get(curRank) + 1);
 				}
 				else
 					rankToFrequency.put(curRank, 1);
-			}	
+			}	*/
 
 			droppedPacketInfoCount = droppedPacketInfoCount + (int) buckets[minIndex].count;
 			buckets[minIndex].flowid = key;

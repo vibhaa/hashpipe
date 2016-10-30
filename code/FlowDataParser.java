@@ -128,11 +128,12 @@ public class FlowDataParser{
 			while (scanner.hasNextLine())
 			{
 				line = scanner.nextLine();
-				if (linenumber++ == 0)
-					continue;
 
 				fields = line.split(",");
 				if (fields.length < 5)
+					continue;
+
+				if (fields[1].equals("ip.dst"))
 					continue;
 
 				String srcipString = fields[0];
@@ -161,4 +162,27 @@ public class FlowDataParser{
 			return null;
 		}
 	}
+
+	/*public static Packet parseOnePacket(String line){
+		//line = scanner.nextLine();
+		fields = line.split(",");
+		if (fields.length < 5)
+			return null;
+
+		String srcipString = fields[0];
+		long srcip = convertAddressToLong(srcipString);
+
+		String dstipString = fields[1];
+		long dstip = convertAddressToLong(dstipString);
+
+		String srcPort = fields[3];
+		String dstPort = fields[4];
+		String protocol = fields[2];
+
+		if (srcipString.length() == 0 || dstipString.length() == 0 || protocol.length() == 0 || srcPort.length() == 0 || dstPort.length() == 0)
+			return null;
+
+		Packet p = new Packet(srcip, dstip, srcPort, dstPort, protocol);
+		packetStream.add(p);
+	}*/
 }

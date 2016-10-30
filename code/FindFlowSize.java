@@ -16,12 +16,16 @@ public class FindFlowSize{
 			while (scanner.hasNextLine())
 			{
 				line = scanner.nextLine();
-				if (linenumber++ == 0)
-					continue;
 
 				fields = line.split(",");
 
 				if (fields.length < 5)
+					continue;
+
+				if (fields[1].equals("ip.dst"))
+					continue;
+
+				if (fields[1].equals(""))
 					continue;
 
 				String srcipString = Long.toString(FlowDataParser.convertAddressToLong(fields[0])); // caida default

@@ -46,7 +46,7 @@ public class LossyFlowIdentifier{
 	}*/
 
 	public static void runLossIdentificationTrials(SummaryStructureType type, Sketch originalPacketSketch, ArrayList<Packet> lostPacketStream, double[] threshold, int tableSize, int D){
-		int numberOfTrials = 1000;
+		int numberOfTrials = 100;
 		int cumDroppedPacketInfoCount = 0;
 		int observedSize[] = new int[threshold.length];
 		int expectedSize[] = new int[threshold.length];
@@ -77,11 +77,11 @@ public class LossyFlowIdentifier{
 			int count = 0;
 			for (Packet p : lostPacketStream){
 				//lostPacketSketch.updateCountInSketch(p);
-				//System.out.println(p.getSrcIp());
+				//System.out.println(p.getDstIp());
 				if (type == SummaryStructureType.GroupCounters)
-					gcHashTable.processData(p.getSrcIp());
+					gcHashTable.processData(p.getDstIp());
 				else
-					lostFlowHashTable.processData(p.getSrcIp(), count++, rankToFrequency);
+					lostFlowHashTable.processData(p.getDstIp(), count++, rankToFrequency);
 				
 			}
 
@@ -183,6 +183,7 @@ public class LossyFlowIdentifier{
 						}
 					}
 				}
+				i-329356ee:/dev/sda1 (attached)
 
 			
 				int bigLoserPacketsLost = 0;
@@ -193,6 +194,8 @@ public class LossyFlowIdentifier{
 				expectedHH = new HashSet<Long>();
 				for (String f : flowsToBeLost){
 					if (flowSizes.get(FlowDataParser.convertAddressToLong(f)) > (int) (threshold[thr_index] * lostPacketStream.size())){
+						//System.err.println(FlowDataParser.convertAddressToLong(f));
+						//System.err.println((int) (threshold[thr_index] * lostPacketStream.size()));
 						expectedHH.add(FlowDataParser.convertAddressToLong(f));
 					}
 				}
@@ -270,8 +273,8 @@ public class LossyFlowIdentifier{
 				int count = 0;
 				for (Packet p : lostPacketStream){
 				//lostPacketSketch.updateCountInSketch(p);
-				//System.out.println(p.getSrcIp());
-					lostFlowHashTable.processData(p.getSrcIp(), count++, rankToFrequency);
+				//System.out.println(p.getDstIp());
+					lostFlowHashTable.processData(p.getDstIp(), count++, rankToFrequency);
 				}
 
 				cumDroppedPacketInfoCount += lostFlowHashTable.getDroppedPacketInfoCount();
@@ -384,7 +387,7 @@ public class LossyFlowIdentifier{
 				CountMinWithCache cmsketch = new CountMinWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize, threshold, 0);
 				int count = 0;
 				for (Packet p : lostPacketStream){
-					cmsketch.processData(p.getSrcIp(), thr_totalPackets);
+					cmsketch.processData(p.getDstIp(), thr_totalPackets);
 				}
 
 				cumDroppedPacketInfoCount += cmsketch.getDroppedPacketInfoCount();
@@ -504,11 +507,11 @@ public class LossyFlowIdentifier{
 
 				for (Packet p : lostPacketStream){
 					if (type == SummaryStructureType.SampleAndHold)
-						flowMemoryFromSampling.processData(p.getSrcIp());
+						flowMemoryFromSampling.processData(p.getDstIp());
 					else if (type == SummaryStructureType.UnivMon)
-						univmon.processData(p.getSrcIp());
+						univmon.processData(p.getDstIp());
 					else
-						cmsketch.processData(p.getSrcIp(), thr_totalPackets);
+						cmsketch.processData(p.getDstIp(), thr_totalPackets);
 				}
 
 				// get the heavy hitters from a dump of the cache and track them separately
@@ -662,7 +665,7 @@ public class LossyFlowIdentifier{
 		CountMinWithCache cmcache = new CountMinWithCache(totalMemory, SummaryStructureType.CountMinCacheNoKeys, lostPacketStream.size(), D, 10, 0.003, 0);
 
 		for (Packet p : lostPacketStream){
-			cmcache.processData(p.getSrcIp(), thr_totalPackets);
+			cmcache.processData(p.getDstIp(), thr_totalPackets);
 		}
 
 		Sketch cmsketch = cmcache.getSketch();
@@ -683,6 +686,7 @@ public class LossyFlowIdentifier{
 
 		//double threshold = 0.000001;
 		// pass the filename from which the packet data needs to be parsed
+		long start = System.currentTimeMillis();
 		ArrayList<Packet> originalPacketStream;
 		if(args[0].contains("caida") || args[0].contains("Caida"))
 			originalPacketStream = FlowDataParser.parseCAIDAPacketData(args[0]);
@@ -722,7 +726,7 @@ public class LossyFlowIdentifier{
 		// perform the tracking of orginal packets at the entry point so that we can find the perflow size
 		Sketch originalPacketSketch = new Sketch(500, 3, originalPacketStream.size());
 		for (Packet p : originalPacketStream){
-			originalPacketSketch.updateCountInSketch(p.getSrcIp());
+			originalPacketSketch.updateCountInSketch(p.getDstIp());
 		}
 
 		// collect stream data at the observation point where the statistics are collected for the link
@@ -735,8 +739,11 @@ public class LossyFlowIdentifier{
 		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
 		//final double threshold[] = {0.000459, 0.00065, 0.0006, 0.00055, 0.00005, 0.00045, 0.0004};
 		//final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500};
-		final int tableSize[] = {12500, 25000, 50000, 100000, 200000, 400000, 800000};
-		final double threshold[] = {817, 614, 370, 192, 87};
+		final int tableSize[] = {3000/*, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 1050, 1200, 1350, 1500, 1800, 2100/*, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500*/};
+		//final int tableSize[] = {12500/*, 25000, 50000, 100000, 200000, 400000, 800000*/};
+		final double threshold[] = {3731/*, 2220, 1393, 826, 443, 258, 194 /*817/*, 614, 370, 192, 87*/};
+		//final int tableSize[] = {12500/*, 25000, 50000, 100000, 200000, 400000, 800000*/};
+		//final double threshold[] = {817/*, 614, 370, 192, 87};
 		//final int tableSize[] = {300, 600, 900, 1200/*, 2520/*, 5040, 7560, /*10080*/};
 		//final int tableSize[] = {64};
 
@@ -747,7 +754,7 @@ public class LossyFlowIdentifier{
 			System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
 				//for (int thr_index = 0; thr_index < threshold.length; thr_index++){
-					for (int D = 5; D <= 5; D++){
+					for (int D = 6; D <= 6; D++){
 						if (D == 11 || D == 13)
 							continue;
 						// change the expected flows to be lost accordingly
@@ -759,21 +766,21 @@ public class LossyFlowIdentifier{
 
 			 			// run the loss identification trials for the appropriate heuristic
 						if (args[3].contains("Basic"))
-							runLossIdentificationTrials(SummaryStructureType.BasicHeuristic, originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
+							runLossIdentificationTrials(SummaryStructureType.BasicHeuristic, originalPacketSketch, originalPacketStream, threshold, tableSize[tableSize_index], D);
 						else if (args[3].contains("Multi"))
-							runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
+							runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, originalPacketStream, threshold, tableSize[tableSize_index], D);
 						else if (args[3].contains("Single"))
-							runLossIdentificationTrials(SummaryStructureType.RollingMinSingleLookup , originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
+							runLossIdentificationTrials(SummaryStructureType.RollingMinSingleLookup , originalPacketSketch, originalPacketStream, threshold, tableSize[tableSize_index], D);
 						else if (args[3].contains("coalesce"))
-							runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter , originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index], D);
-						//runLossIdentificationTrials(SummaryStructureType.DLeft, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.BasicHeuristic, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.MinReplacementHeuristic, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.EvictionWithoutCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.EvictionWithCount, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
-						//runLossIdentificationTrials(SummaryStructureTdype.RollingMinSingleLookup, originalPacketSketch, lostPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+							runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter , originalPacketSketch, originalPacketStream, threshold, tableSize[tableSize_index], D);
+						//runLossIdentificationTrials(SummaryStructureType.DLeft, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureType.BasicHeuristic, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureType.MinReplacementHeuristic, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureType.EvictionWithoutCount, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureType.EvictionWithCount, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
+						//runLossIdentificationTrials(SummaryStructureTdype.RollingMinSingleLookup, originalPacketSketch, originalPacketStream, threshold[thr_index], tableSize[tableSize_index]);
 					}
 				//}
 			}
@@ -786,11 +793,11 @@ public class LossyFlowIdentifier{
 
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) {
 				if (args[3].contains("SampleAndHold")) {
-					runTrialsPerThreshold(SummaryStructureType.SampleAndHold, lostPacketStream, threshold, tableSize[tableSize_index], 0, 0);
+					runTrialsPerThreshold(SummaryStructureType.SampleAndHold, originalPacketStream, threshold, tableSize[tableSize_index], 0, 0);
 					continue;
 				}
 				else if (args[3].contains("UnivMon")){
-					runTrialsPerThreshold(SummaryStructureType.UnivMon, lostPacketStream, threshold, tableSize[tableSize_index]*10, 0, 0);
+					runTrialsPerThreshold(SummaryStructureType.UnivMon, originalPacketStream, threshold, tableSize[tableSize_index]*10, 0, 0);
 					continue;
 				}
 				
@@ -801,11 +808,11 @@ public class LossyFlowIdentifier{
 
 				 		// run the loss identification trials for the appropriate heuristic
 				 		if (args[3].contains("NoKeyNoRepBit"))
-							runTrialsPerThreshold(SummaryStructureType.CountMinCacheNoKeys, lostPacketStream, threshold, tableSize[tableSize_index]*10, D, thr_totalPackets);
+							runTrialsPerThreshold(SummaryStructureType.CountMinCacheNoKeys, originalPacketStream, threshold, tableSize[tableSize_index]*10, D, thr_totalPackets);
 						else if (args[3].contains("NoKeyRepBit"))
-							runTrialsPerThreshold(SummaryStructureType.CountMinCacheNoKeysReportedBit, lostPacketStream, threshold, tableSize[tableSize_index]*10, D, thr_totalPackets);
+							runTrialsPerThreshold(SummaryStructureType.CountMinCacheNoKeysReportedBit, originalPacketStream, threshold, tableSize[tableSize_index]*10, D, thr_totalPackets);
 						else if (args[3].contains("Keys"))
-							runTrialsPerThreshold(SummaryStructureType.CountMinCacheWithKeys, lostPacketStream, threshold, tableSize[tableSize_index]*10, D, thr_totalPackets);
+							runTrialsPerThreshold(SummaryStructureType.CountMinCacheWithKeys, originalPacketStream, threshold, tableSize[tableSize_index]*10, D, thr_totalPackets);
 					}
 				}
 			}
@@ -813,7 +820,7 @@ public class LossyFlowIdentifier{
 		else if (args[2].equals("groupCounters")){
 			System.out.println("totalMemory," + "threshold," + "D," + "FalsePositive %," + "False Negative %," + "expected number, reported number, hhReportedFraction, deviation, table occupancy, duplicates,");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
-				runLossIdentificationTrials(SummaryStructureType.GroupCounters, originalPacketSketch, lostPacketStream, threshold, tableSize[tableSize_index]*3, 1);
+				runLossIdentificationTrials(SummaryStructureType.GroupCounters, originalPacketSketch, originalPacketStream, threshold, tableSize[tableSize_index]*3, 1);
 			}
 		}
 		else if (args[2].equals("CMDist")){
@@ -825,7 +832,7 @@ public class LossyFlowIdentifier{
 				System.out.print(i + ",");
 			System.out.println();
 
-			getCMSketchCounters(lostPacketStream, totalMemory, D, thr_totalPackets);
+			getCMSketchCounters(originalPacketStream, totalMemory, D, thr_totalPackets);
 
 		}
 		else {
@@ -839,17 +846,19 @@ public class LossyFlowIdentifier{
 			System.out.println("Actual, observed, deviation");
 
 			if (args[3].contains("Basic"))
-				runSizeDifferenceMeasurement(SummaryStructureType.BasicHeuristic, originalPacketSketch, lostPacketStream, size);
+				runSizeDifferenceMeasurement(SummaryStructureType.BasicHeuristic, originalPacketSketch, originalPacketStream, size);
 			else if (args[3].contains("Multi"))
-				runSizeDifferenceMeasurement(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, lostPacketStream, size);
+				runSizeDifferenceMeasurement(SummaryStructureType.RollingMinWihoutCoalescense, originalPacketSketch, originalPacketStream, size);
 			else if (args[3].contains("Single"))
-				runSizeDifferenceMeasurement(SummaryStructureType.RollingMinSingleLookup, originalPacketSketch, lostPacketStream, size);
+				runSizeDifferenceMeasurement(SummaryStructureType.RollingMinSingleLookup, originalPacketSketch, originalPacketStream, size);
 			else if (args[3].contains("coalesce"))
-				runSizeDifferenceMeasurement(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, lostPacketStream,  size);
+				runSizeDifferenceMeasurement(SummaryStructureType.RollingMinWithBloomFilter, originalPacketSketch, originalPacketStream,  size);
 			else if (args[3].contains("NoKeyNoRepBit"))
-				runSizeDifferenceMeasurementOnSketch(SummaryStructureType.CountMinCacheNoKeys, lostPacketStream, thr, size*10, 300000);
+				runSizeDifferenceMeasurementOnSketch(SummaryStructureType.CountMinCacheNoKeys, originalPacketStream, thr, size*10, 300000);
 			else if (args[3].contains("Keys"))
-				runSizeDifferenceMeasurementOnSketch(SummaryStructureType.CountMinCacheWithKeys, lostPacketStream, thr, size*10, 300000);
+				runSizeDifferenceMeasurementOnSketch(SummaryStructureType.CountMinCacheWithKeys, originalPacketStream, thr, size*10, 300000);
 		}
+
+		System.out.println((System.currentTimeMillis() - start)/1000);
 	}
 }
