@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
    initially written for the sketches to all be reversible so that the 
    reversibility procedure would identify the lossy buckets - unused 
    code in the context of the hash table approach*/
-public class TopKIdentifierFlowId{
+public class TopKIdentifierFlowId2{
 	private static HashSet<String> expectedHH;
 	private static HashMap<String, Integer> flowSizes;
 	private static ArrayList<FlowIdWithCount> flowAggWithSizes;
@@ -256,13 +256,21 @@ public class TopKIdentifierFlowId{
 				underEstimateAmount[k_index] += curUnderEstimation/denominator;
 				//System.out.println(numWithin1Dev[k_index] + " " + numWithin2Dev[k_index]);
 
-				/*if (type == SummaryStructureType.OverallMinReplacement){
+				if ((type == SummaryStructureType.OverallMinReplacement || type == SummaryStructureType.BasicHeuristic) && k_index == 0){
 					int[] keysPerBucket = lostFlowHashTable.getKeysPerBucket();
-					for (int num : keysPerBucket){
-						System.err.println(num);
-						keysSeen[k_index] += num;
+					FlowIdWithCount[] flows = lostFlowHashTable.getBuckets();
+					for (int i = 0; i < keysPerBucket.length; i++){
+						boolean isFP = false;
+						boolean isTP = false;
+						if (observedHH.containsKey(flows[i].flowid)){
+							if (expectedHH.contains(flows[i].flowid)) isTP = true;
+							else isFP = true;
+						}
+						double thisdeviation = Math.abs((flows[i].count - flowSizes.get(flows[i].flowid))/(double) flowSizes.get(flows[i].flowid));
+						System.err.println(keysPerBucket[i]+ "," + isFP + "," + isTP + "," + thisdeviation);
+						keysSeen[k_index] += keysPerBucket[i];
 					}
-				}*/
+				}
 			}
 		}
 
@@ -310,7 +318,7 @@ public class TopKIdentifierFlowId{
 		for (int i = 0; i < thres.length; i++)
 			thres[i] /= 11849078;*/
 
-		double thresh = 1903/8665209;
+		double thresh = 3800/10000000;
 		int numberOfTrials = 1;
 		int observedSize[] = new int[k.length];
 		int expectedSize[] = new int[k.length];
@@ -358,7 +366,7 @@ public class TopKIdentifierFlowId{
 			outputFlowsList = new ArrayList<FlowIdWithCount>();
 				//Collections.shuffle(inputPacketStream);
 						//cacheSize[k_index] = (int) (1.0/threshold) + 20;/* (1.25*expectedSize[k_index]);*/
-			cacheSize = 530;
+			cacheSize = totalMemory/2;
 			//System.out.println("cacheSize" + cacheSize);
 			// track the unique lost flows
 			CountMinFlowIdWithCache cmsketch = null;
@@ -372,7 +380,7 @@ public class TopKIdentifierFlowId{
 			/*else if (type == SummaryStructureType.UnivMon)
 				univmon = new UnivMon(totalMemory, type, inputPacketStream.size(), k[k_index], thres[k_index]);*/
 			else
-				cmsketch = new CountMinFlowIdWithCache(totalMemory, type, inputPacketStream.size(), D, cacheSize, thresh, k[k.length - 1]);
+				cmsketch = new CountMinFlowIdWithCache((totalMemory - cacheSize)*15/2, type, inputPacketStream.size(), D, cacheSize, thresh, k[k.length - 1]);
 
 			for (Packet p : inputPacketStream){
 				if (type == SummaryStructureType.SampleAndHold)
@@ -419,10 +427,14 @@ public class TopKIdentifierFlowId{
 				//	observedHH.remove(flowid);
 				//System.out.println("after cleaning: " + observedHH.size());
 			}
-
+			FlowIdWithCount[] outputFlowBuckets;
 			// observed flows in sorted order so that we can pick the hh as the top k
-			FlowIdWithCount[] outputFlowBuckets = new FlowIdWithCount[outputFlowsList.size()];
-			outputFlowBuckets = outputFlowsList.toArray(outputFlowBuckets);
+			if (type == SummaryStructureType.CountMinCacheWithKeys)
+				outputFlowBuckets = cmsketch.getCache();
+			else {
+				outputFlowBuckets = new FlowIdWithCount[outputFlowsList.size()];
+				outputFlowBuckets = outputFlowsList.toArray(outputFlowBuckets);
+			}
 			Arrays.sort(outputFlowBuckets);
 		
 
@@ -456,12 +468,12 @@ public class TopKIdentifierFlowId{
 				dumpOutputFlowBuckets = dumpOutputFlowsList.toArray(dumpOutputFlowBuckets);
 				Arrays.sort(dumpOutputFlowBuckets);
 
-				if (type == SummaryStructureType.CountMinCacheWithKeys){
+				/*if (type == SummaryStructureType.CountMinCacheWithKeys){
 					for (int i = 0; i < k[k_index]; i++){
 					observedHH.put(dumpOutputFlowBuckets[i].flowid, dumpOutputFlowBuckets[i].count);
 					}
 				}
-				observedSizeFromDump[k_index] = observedHHfromDump.size();
+				observedSizeFromDump[k_index] = observedHHfromDump.size();*/
 
 
 				// get occupancy and number of notifications to the controller
@@ -555,12 +567,12 @@ public class TopKIdentifierFlowId{
 			System.out.print("," + cumDeviation[k_index]/numberOfTrials + "," + occupancy[k_index]/numberOfTrials + "," + thr_totalPackets + "," + controllerReportCount[k_index]/numberOfTrials + ",");
 			//System.out.print((double) Math.sqrt(varianceFP[k_index]) + "," + Math.sqrt(varianceFN[k_index]) + "," + Math.sqrt(varianceRep[k_index]) + ",");
 
-			if (type == SummaryStructureType.CountMinCacheWithKeys){
+			/*if (type == SummaryStructureType.CountMinCacheWithKeys){
 				System.out.print((double) numberOfFalsePositivesinDump[k_index]/numberOfTrials/observedSizeFromDump[k_index] + ",");
 				System.out.print((double) numberOfFalseNegativesinDump[k_index]/numberOfTrials/expectedSize[k_index] + ",");
 				System.out.print(expectedSize[k_index] + "," + observedSizeFromDump[k_index] + "," + (double) hhPacketReportedinDump[k_index]/hhPacketCount[k_index]);
 				System.out.print("," + cumDeviationinDump[k_index]/numberOfTrials + ",");
-			}
+			}*/
 			
 			System.out.println();
 		}
@@ -618,14 +630,15 @@ public class TopKIdentifierFlowId{
 		//final int tableSize[] = {200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
 		//final int tableSize[] = {64};
 		
-		/* d measurements */
-		final int k[] = {140, 280, 420};
-		final int tableSize[] = {/*840, 1680, */2520};
+		/* d measurements 
+		final int k[] = {210, 420, 630, 168, 336, 504};
+		final int tableSize[] = {840, 1680, 2520, 4200};*/
 
-		/* m measurements 
-		final int k[] = {30, 60, 120, 150, 240, 300};
+		/* m measurements */
+		final int k[] = {150 /*30, 60, 120, 150, 240, 300*/};
 		//final int tableSize[] = {100/*, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200};
-		final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 3000, 3600, 4200, 4500};*/
+		//final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 3000, 3600, 4200, 4500, 4800};
+		final int tableSize[] = {1200};
 		//final int tableSize[] = {300, 900, 1500, 2100, 3000, 6000, 9000, 12000};
 
 		if (args[2].equals("runTrial"))	{
@@ -633,7 +646,7 @@ public class TopKIdentifierFlowId{
 			System.out.print("reported number, hhReportedFraction, deviation, table occupancy, duplicates, fraction missing in table, cumProblematicEvictionFraction");
 			System.out.println(" theoretical Prob, P(within 1 stddev), P(within 2 stddev), numUnderEstimated, underEstimateAmount, StddevFP, StddevFN, StddevRep");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
-				for (int D = 2; D <= 8; D++){
+				for (int D = 6; D <= 6; D++){
 				//for (int D = 2; D <= 12; D++){
 					if (D == 11 || D == 13)
 						continue;
@@ -668,7 +681,7 @@ public class TopKIdentifierFlowId{
 					runTrialsPerK(SummaryStructureType.UnivMon, inputPacketStream, k, tableSize[tableSize_index], 0, 0);
 				}
 				else if (args[3].contains("CM")){
-					runTrialsPerK(SummaryStructureType.CountMinCacheNoKeys, inputPacketStream, k, tableSize[tableSize_index]*13/2, 5, 0);
+					runTrialsPerK(SummaryStructureType.CountMinCacheWithKeys, inputPacketStream, k, tableSize[tableSize_index], 5, 0);
 				}
 			}
 		}

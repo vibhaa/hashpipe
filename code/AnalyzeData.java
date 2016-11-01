@@ -28,6 +28,7 @@ public class AnalyzeData{
 		public int hashCode() {
 			String s = Integer.toString(k);
 			s += Integer.toString(d);
+			//s += Double.toString(m);
 			s += Integer.toString(m);
 		    return s.hashCode();
 		}
@@ -64,9 +65,16 @@ public class AnalyzeData{
 				line = scanner.nextLine();
 				String[] fields = line.split(",");
 
+				if (fields.length < 10)
+					continue;
+
+				if (!fields[0].matches("[0-9]+"))
+					continue;
+
 				int offset = 0;
-				if (args[1].equals("SH"))
+				if (args[1].equals("SH") || args[1].equals("CM"))
 					offset = 1;
+
 
 				int m = Integer.parseInt(fields[0]);
 				int k = Integer.parseInt(fields[1 + offset]);
@@ -74,6 +82,10 @@ public class AnalyzeData{
 				double falseNeg = Double.parseDouble(fields[4 + offset]);
 				double weightedFalseNeg = 1 - Double.parseDouble(fields[7 + offset]);
 
+				if (args[1].equals("CM"))
+					m = m*2/13;
+
+				//double mNew = (double) m*140/8000;
 				ExpSetting newexp = new ExpSetting(k, d, m);
 
 				ArrayList<Double> curList1  = null;
@@ -90,11 +102,11 @@ public class AnalyzeData{
 
 				if (expToWeightedFalseNegs.containsKey(newexp)){
 					curList2 = expToWeightedFalseNegs.get(newexp);
-					curList2.add(falseNeg);
+					curList2.add(weightedFalseNeg);
 				}
 				else {
 					curList2 = new ArrayList<Double>();
-					curList2.add(falseNeg);
+					curList2.add(weightedFalseNeg);
 				}
 
 				expToFalseNegs.put(newexp, curList1);
@@ -109,14 +121,14 @@ public class AnalyzeData{
 			return;
 		}
 
-		System.out.println("tablesize" +"," + "K, D," + "Mean False Negs" + "," + "StdDev False Negs" + "," + "Mean Weighted FN," + "STDDev Weighted FN");
+		//System.out.println("tablesize" +"," + "K, D," + "Mean False Negs" + "," + "StdDev False Negs" + "," + "Mean Weighted FN," + "STDDev Weighted FN");
 		ArrayList<Double> curList1  = null;
 		ArrayList<Double> curList2 = null;
 		for (ExpSetting e : expToFalseNegs.keySet()){
 			curList1 = expToFalseNegs.get(e);
 			curList2 = expToWeightedFalseNegs.get(e);
 
-			System.out.println(e.m +"," + e.k + "," + e.d + "," + getMean(curList1) + "," + getStdDev(curList1) + "," + getMean(curList2) + "," + getStdDev(curList2));
+			System.out.println(e.m +" " + e.k + " " + e.d + " " + getMean(curList1) + " " + getStdDev(curList1) + " " + getMean(curList2) + " " + getStdDev(curList2));
 		}
 	}
 }

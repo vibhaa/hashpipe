@@ -49,7 +49,7 @@ public class CountMinFlowIdWithCache{
 		if (type == SummaryStructureType.CountMinCacheNoKeys)
 			countMinSketch = new Sketch((totalMemory /*- cacheSize*/)/numHashFunctions, numHashFunctions, numberOfFlows);
 		else
-			countMinSketch = new Sketch((totalMemory - 8*cacheSize)/numHashFunctions, numHashFunctions, numberOfFlows);
+			countMinSketch = new Sketch(totalMemory/numHashFunctions, numHashFunctions, numberOfFlows);
 		heavyhitterList = new HashMap<String, Long>();
 		
 		if (type == SummaryStructureType.CountMinCacheNoKeysReportedBit)
@@ -79,29 +79,31 @@ public class CountMinFlowIdWithCache{
 		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCountBigHash(key) > threshold * totalNumberOfPackets){
 			/* hash to find index in cache and update*/
 			//int curKeyIndex = (int) ((hashA[0]*key + hashB[0]) % P) % (cacheSize);
-			/*BigInteger bigint = new BigInteger(key);
+			BigInteger bigint = new BigInteger(key);
 			bigint = bigint.multiply(hashBigA[0]);
 			bigint = bigint.add(hashBigB[0]);
 			bigint = bigint.mod(bigP);
 			bigint = bigint.mod(new BigInteger(Integer.toString(cacheSize)));
-			int curKeyIndex = bigint.intValue();*/
+			int curKeyIndex = bigint.intValue();
 
 
 
 			if (type == SummaryStructureType.CountMinCacheWithKeys){
-				int curKeyIndex = -1; // BOGUS
-				if (!key.equals(cache[curKeyIndex].flowid)){
+				//int curKeyIndex = -1; // BOGUS
+				/*if (!key.equals(cache[curKeyIndex].flowid)){
 
 					// new key
 					cache[curKeyIndex].flowid = key;
 					cache[curKeyIndex].count = countMinSketch.estimateCountBigHash(key) - 1;
 					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 					controllerAction++;
-				}
+				}*/
 
-				if (cache[curKeyIndex].count == 0)
+				if (cache[curKeyIndex].count == 0){
+					cache[curKeyIndex].flowid = key;
 					cache[curKeyIndex].count = countMinSketch.estimateCountBigHash(key);
-				else
+				}
+				else if (key.equals(cache[curKeyIndex].flowid))
 					cache[curKeyIndex].count++;
 			}
 			else if (type == SummaryStructureType.CountMinCacheNoKeys){

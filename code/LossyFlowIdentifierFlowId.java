@@ -18,7 +18,7 @@ public class LossyFlowIdentifierFlowId{
 	private static double accuracy = 0.99;
 
 	public static void runLossIdentificationTrials(SummaryStructureType type, ArrayList<Packet> lostPacketStream, double[] threshold, int tableSize, int D){
-		int numberOfTrials = 100;
+		int numberOfTrials = 1;
 		int cumDroppedPacketInfoCount = 0;
 		int observedSize[] = new int[threshold.length];
 		int expectedSize[] = new int[threshold.length];
@@ -245,7 +245,21 @@ public class LossyFlowIdentifierFlowId{
 			}
 			expectedSize[thr_index] = expectedHH.size();
 		}
-		
+
+		//System.out.println("cacheSize" + cacheSize);
+		// track the unique lost flows
+
+		double samplingProb = totalMemory/(double) lostPacketStream.size(); /*(1 - Math.pow(1 - accuracy, 1/thresholdCount))*/
+		SampleAndHoldFlowId flowMemoryFromSampling = null;
+
+		if (type == SummaryStructureType.SampleAndHold){
+			flowMemoryFromSampling = new SampleAndHoldFlowId(totalMemory, type, lostPacketStream.size(), samplingProb);
+			for (Packet p : lostPacketStream){
+				flowMemoryFromSampling.processData(p.getFlowId());
+			}
+		}
+
+
 		HashMap<String, Long> observedHH;
 		HashMap<String, Long> observedHHfromDump;
 		for (int t = 0; t < numberOfTrials; t++){
@@ -265,28 +279,19 @@ public class LossyFlowIdentifierFlowId{
 				expectedSize[thr_index] = expectedHH.size();
 				cacheSize[thr_index] = (int) (1.0/threshold[thr_index]) + 20;/* (1.25*expectedSize[thr_index]);*/
 
-				//System.out.println("cacheSize" + cacheSize);
-				// track the unique lost flows
 				CountMinFlowIdWithCache cmsketch = null;
-				SampleAndHoldFlowId flowMemoryFromSampling = null;
-				UnivMon univmon = null;
-				double thresholdCount = lostPacketStream.size() * threshold[thr_index];
-				double samplingProb = 2.5* totalMemory/(double) lostPacketStream.size(); /*(1 - Math.pow(1 - accuracy, 1/thresholdCount))*/
-
-				if (type == SummaryStructureType.SampleAndHold)
-					flowMemoryFromSampling = new SampleAndHoldFlowId(totalMemory, type, lostPacketStream.size(), samplingProb);
-				else if (type == SummaryStructureType.UnivMon)
+		    	UnivMon univmon = null;
+		    	double thresholdCount = lostPacketStream.size() * threshold[thr_index];
+				
+				if (type == SummaryStructureType.UnivMon)
 					univmon = new UnivMon(totalMemory, type, lostPacketStream.size(), 0, threshold[thr_index]);
-				else
+				else if (type == SummaryStructureType.CountMinCacheWithKeys)
 					cmsketch = new CountMinFlowIdWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize[thr_index], threshold[thr_index], 0);
 
-				for (Packet p : lostPacketStream){
-					if (type == SummaryStructureType.SampleAndHold)
-						flowMemoryFromSampling.processData(p.getFlowId());
-					/*else if (type == SummaryStructureType.UnivMon)
-						univmon.processData(p.getSrcIp());*/
-					else
+				if (type != SummaryStructureType.SampleAndHold){
+					for (Packet p : lostPacketStream){
 						cmsketch.processData(p.getFlowId(), thr_totalPackets);
+					}
 				}
 
 				// get the heavy hitters from a dump of the cache and track them separately
@@ -517,23 +522,20 @@ public class LossyFlowIdentifierFlowId{
 		ArrayList<Packet> lostPacketStream = Packet.computeDiff(originalPacketStream, finalPacketStream);*/
 		//Sketch lostPacketSketch = new Sketch(K, H, lostPacketStream.size());
 		
-		//final int tableSize[] = {30, 75, 150, 300, 500, 900, 1200, 1500, 2000};
-		//final int tableSize[] = {/*100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 1024, 2048/*, 4096, 8192*/};
-		//final double threshold[] = {0.008, 0.006, 0.0035, 0.0025, 0.001, 0.0008, 0.0006, 0.00035, 0.00025, 0.0001};
-		//final double threshold[] = {0.002, 0.001, 0.0009, 0.00075, 0.0006, 0.00045, 0.0003, 0.00015};
-		//final double threshold[] = {0.000459, 0.00065, 0.0006, 0.00055, 0.00005, 0.00045, 0.0004};
-		//final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500};
+		final double threshold[] = {8500, 3800, 2600};
+		//final int tableSize[] = {100/*, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200};
+		final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 3000, 3600, 4200, 4500};
 		//final int tableSize[] = {12500, 25000, 50000, 100000, 200000, 400000, 800000};
 		//final double threshold[] = {817/*, 614, 370, 192, 87*/};
-		final int tableSize[] = {3000/*, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 1050, 1200, 1350, 1500, 1800, 2100/*, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500*/};
+		//final int tableSize[] = {3000/*, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 1050, 1200, 1350, 1500, 1800, 2100/*, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500*/};
 		//final int tableSize[] = {12500/*, 25000, 50000, 100000, 200000, 400000, 800000*/};
-		final double threshold[] = {3731/*, 2220, 1393, 826, 443, 258, 194 /*817/*, 614, 370, 192, 87*/}; //n- dstip
+		//final double threshold[] = {3731/*, 2220, 1393, 826, 443, 258, 194 /*817/*, 614, 370, 192, 87*/}; //n- dstip
 		//final double threshold[] = {1450, 926, 625, 479, 400, 348, 245, 198/*817/*, 614, 370, 192, 87*/}; // 5tuple
 		//final int tableSize[] = {300, 600, 900, 1200/*, 2520/*, 5040, 7560, /*10080*/};
 		//final int tableSize[] = {64};
 
 		for (int i = 0; i < threshold.length; i++)
-			threshold[i] /= 1000000;
+			threshold[i] /= 10000000;
 
 		if (args[2].equals("runTrial"))	{
 			System.out.println("tableSize" + "," + "threshold" + "," + "D," + "FalsePositive %" + "," + "False Negative %" + "," + "expected number, reported number, bigLoserReportedFraction, deviation, table occupancy");

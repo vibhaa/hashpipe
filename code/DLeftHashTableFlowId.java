@@ -254,7 +254,7 @@ public class DLeftHashTableFlowId{
 
 			buckets[minIndex].flowid = key;
 			buckets[minIndex].count += 1;
-
+			keysBeenInIndex[minIndex] += 1;
 			return;
 		}
 
@@ -584,6 +584,7 @@ public class DLeftHashTableFlowId{
 				if (buckets[index].flowid.equals("")) {
 					buckets[index].flowid = key;
 					buckets[index].count = value;
+					keysBeenInIndex[index]++;
 					break;
 				}
 
@@ -704,8 +705,7 @@ public class DLeftHashTableFlowId{
 			droppedPacketInfoCount = droppedPacketInfoCount + (int) buckets[minIndex].count;
 			buckets[minIndex].flowid = key;
 			buckets[minIndex].count += 1; // replace with min+1
-
-			
+			keysBeenInIndex[minIndex] += 1;			
 		}
 	}
 
