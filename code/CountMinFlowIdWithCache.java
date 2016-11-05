@@ -27,6 +27,7 @@ public class CountMinFlowIdWithCache{
 	private BigInteger[] hashBigA;
 	private BigInteger[] hashBigB;
 	private BigInteger bigP;
+	private int flag;
 
 	public CountMinFlowIdWithCache(int totalMemory, SummaryStructureType type, int numberOfFlows, int D, int cacheSize, double threshold, int k){
 		this.tableSize = tableSize;
@@ -35,11 +36,14 @@ public class CountMinFlowIdWithCache{
 		cumDroppedPacketInfoCount = 0;
 		totalNumberOfPackets = 0;
 		controllerAction = 0;
+		this.flag = 1;
 
 		this.type = type;
 		this.cacheSize = cacheSize;
 		this.threshold = threshold;
 		this.k = k;
+
+		//System.out.println(this.threshold + "threshold in constructor");
 		
 		cache = new FlowIdWithCount[cacheSize];		
 		for (int j = 0; j < cacheSize; j++){
@@ -76,7 +80,9 @@ public class CountMinFlowIdWithCache{
 		// there is no going back to previously updated stages involved
 		countMinSketch.updateCountInSketchBigHash(key);
 
-		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCountBigHash(key) > threshold * totalNumberOfPackets){
+		if (totalNumberOfPackets > thr_totalPackets && countMinSketch.estimateCountBigHash(key) > threshold * 10000000){
+			//System.out.println(countMinSketch.estimateCountBigHash(key));
+			//System.out.println(threshold*10000000);
 			/* hash to find index in cache and update*/
 			//int curKeyIndex = (int) ((hashA[0]*key + hashB[0]) % P) % (cacheSize);
 			BigInteger bigint = new BigInteger(key);
@@ -98,7 +104,22 @@ public class CountMinFlowIdWithCache{
 					heavyhitterList.put(key, countMinSketch.estimateCountBigHash(key));
 					controllerAction++;
 				}*/
+				/*int i;
+				for (i = 0; i < cache.length; i++)
+					if (cache[i].count == 0) {
+						cache[i].flowid = new String(key);
+						cache[i].count = countMinSketch.estimateCountBigHash(key);
+						break;
+					}
+					else if (key.equals(cache[i].flowid)){
+						cache[i].count++;
+						break;
+					}
 
+				if (i == cache.length && flag != 0){
+					//System.out.println(totalNumberOfPackets);
+					flag = 0;
+				}*/
 				if (cache[curKeyIndex].count == 0){
 					cache[curKeyIndex].flowid = key;
 					cache[curKeyIndex].count = countMinSketch.estimateCountBigHash(key);

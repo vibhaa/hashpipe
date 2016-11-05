@@ -258,6 +258,7 @@ public class DLeftHashTableFlowId{
 			return;
 		}
 
+		long globalMin = 0;
 		for (k = 0; k < D; k++){
 			int index = hashBig(keyBeingCarried, k, tableSize/D) + (k*tableSize/D);
 			int curKeyIndex = hashBig(key, k, tableSize/D) + (k*tableSize/D);
@@ -406,6 +407,14 @@ public class DLeftHashTableFlowId{
 			}
 			
 			else if (type == SummaryStructureType.RollingMinSingleLookup || type == SummaryStructureType.AsymmetricDleftSingleLookUp){
+					/*if (k == 0) {
+						globalMin = 500000;
+						for (int x = 0; x < buckets.length; x++){
+							if (buckets[x].count < globalMin){
+								globalMin = buckets[x].count;
+							}
+						}
+					}*/
 
 					// new flow - this may have been zeroed out from the previous case, so idk how to handle that in hardware
 					if (buckets[index].flowid.equals("") && k == 0) {
@@ -492,6 +501,7 @@ public class DLeftHashTableFlowId{
 						else
 							rankToFrequency.put(curRank, 1);
 					}*/
+					//if (k == D - 1 && totalNumberOfPackets%100 == 0) System.err.println(valueBeingCarried + "," + globalMin);
 
 
 					

@@ -286,7 +286,7 @@ public class LossyFlowIdentifierFlowId{
 				if (type == SummaryStructureType.UnivMon)
 					univmon = new UnivMon(totalMemory, type, lostPacketStream.size(), 0, threshold[thr_index]);
 				else if (type == SummaryStructureType.CountMinCacheWithKeys)
-					cmsketch = new CountMinFlowIdWithCache(totalMemory, type, lostPacketStream.size(), D, cacheSize[thr_index], threshold[thr_index], 0);
+					cmsketch = new CountMinFlowIdWithCache(totalMemory/2, type, lostPacketStream.size(), D, totalMemory/2, threshold[thr_index], 0);
 
 				if (type != SummaryStructureType.SampleAndHold){
 					for (Packet p : lostPacketStream){
@@ -317,7 +317,7 @@ public class LossyFlowIdentifierFlowId{
 					observedHH = univmon.getHeavyHitters();*/
 				else {
 					//get the heavy hitters and clean them up
-					observedHH = cmsketch.getHeavyHitters();
+					/*observedHH = cmsketch.getHeavyHitters();
 					ArrayList<String> flowsToRemove = new ArrayList<String>();
 					for (String flowid : cmsketch.getHeavyHitters().keySet()) {
 						if (type == SummaryStructureType.CountMinCacheNoKeys && cmsketch.getHeavyHitters().get(flowid) > threshold[thr_index]*lostPacketStream.size())
@@ -332,7 +332,14 @@ public class LossyFlowIdentifierFlowId{
 						}
 					}
 					for (String flowid : flowsToRemove)
-						observedHH.remove(flowid);
+						observedHH.remove(flowid);*/
+					if (type == SummaryStructureType.CountMinCacheWithKeys){
+						FlowIdWithCount[] outputFlowBuckets = cmsketch.getCache();
+						for (FlowIdWithCount f : outputFlowBuckets){
+							if (f.count > threshold[thr_index]*lostPacketStream.size())
+								observedHH.put(f.flowid, f.count);
+						}
+					}
 					//System.out.println("after cleaning: " + observedHH.size());
 				}
 
@@ -599,7 +606,7 @@ public class LossyFlowIdentifierFlowId{
 						else if (args[3].contains("NoKeyRepBit"))
 							runTrialsPerThreshold(SummaryStructureType.CountMinCacheNoKeysReportedBit, inputPacketStream, threshold, tableSize[tableSize_index]*13/2, D, thr_totalPackets);
 						else if (args[3].contains("Keys"))
-							runTrialsPerThreshold(SummaryStructureType.CountMinCacheWithKeys, inputPacketStream, threshold, tableSize[tableSize_index]*13/2, D, thr_totalPackets);
+							runTrialsPerThreshold(SummaryStructureType.CountMinCacheWithKeys, inputPacketStream, threshold, tableSize[tableSize_index]*15/2, D, thr_totalPackets);
 					}
 				}
 			}

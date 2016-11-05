@@ -274,7 +274,7 @@ public class TopKIdentifierFlowId{
 
 		for (int k_index = 0; k_index < k.length; k_index++){
 			System.out.print(tableSize + "," + k[k_index] + "," + D + ",");
-			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/observedSize[k_index] + ",");
+			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/(flowSizes.size() - k[k_index]) + ",");
 			System.out.print((double) numberOfFalseNegatives[k_index]/numberOfTrials/expectedSize[k_index] + ",");
 			System.out.print(expectedSize[k_index] + "," + observedSize[k_index] + "," + (double) bigLoserPacketReported[k_index]/bigLoserPacketCount[k_index]);
 			System.out.print("," + cumDeviation[k_index]/numberOfTrials + "," + occupiedSlots[k_index]/tableSize/numberOfTrials + "," + duplicates[k_index]/tableSize/numberOfTrials);
@@ -549,7 +549,7 @@ public class TopKIdentifierFlowId{
 		
 		for (int k_index = 0; k_index < k.length; k_index++){
 			System.out.print(totalMemory + "," + cacheSize + "," + k[k_index] + "," + D + ",");
-			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/observedSize[k_index] + ",");
+			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/(flowSizes.size() - k[k_index])+ ",");
 			System.out.print((double) numberOfFalseNegatives[k_index]/numberOfTrials/expectedSize[k_index] + ",");
 			System.out.print(expectedSize[k_index] + "," + observedSize[k_index] + "," + (double) hhPacketReported[k_index]/hhPacketCount[k_index]);
 			System.out.print("," + cumDeviation[k_index]/numberOfTrials + "," + occupancy[k_index]/numberOfTrials + "," + thr_totalPackets + "," + controllerReportCount[k_index]/numberOfTrials + ",");
@@ -619,8 +619,9 @@ public class TopKIdentifierFlowId{
 		//final int tableSize[] = {64};
 		
 		/* d measurements */
-		final int k[] = {140, 280, 420};
-		final int tableSize[] = {/*840, 1680, */2520};
+		final int k[] = {140/*, 175, 210, 280, 350, 420*/};
+		final int tableSize[] = {400, 600, 800, 1000, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000};
+		//final int tableSize[] = {/*840, 1680, */3360, 5040, 6720, 8400};
 
 		/* m measurements 
 		final int k[] = {30, 60, 120, 150, 240, 300};
@@ -633,7 +634,7 @@ public class TopKIdentifierFlowId{
 			System.out.print("reported number, hhReportedFraction, deviation, table occupancy, duplicates, fraction missing in table, cumProblematicEvictionFraction");
 			System.out.println(" theoretical Prob, P(within 1 stddev), P(within 2 stddev), numUnderEstimated, underEstimateAmount, StddevFP, StddevFN, StddevRep");
 			for (int tableSize_index = 0; tableSize_index < tableSize.length; tableSize_index++) { 
-				for (int D = 2; D <= 8; D++){
+				for (int D = 2; D <= 8; D*=2){
 				//for (int D = 2; D <= 12; D++){
 					if (D == 11 || D == 13)
 						continue;

@@ -42,7 +42,7 @@ public class TopKIdentifierFlowId2{
 		double varianceFN[] = new double[k.length];
 		double varianceRep[] = new double[k.length];
 		// track the unique lost flows
-		DLeftHashTableFlowId lostFlowHashTable = null;
+		DLeftHashTableFlowId2 lostFlowHashTable = null;
 		GroupCounters gcHashTable = null;
 
 		double cumDeviation[] = new double[k.length];
@@ -62,7 +62,7 @@ public class TopKIdentifierFlowId2{
 			if (type == SummaryStructureType.GroupCounters)
 				gcHashTable = new GroupCounters(tableSize, type,  inputStream.size(), D);
 			else
-				lostFlowHashTable = new DLeftHashTableFlowId(tableSize, type, inputStream.size(), D, flowSizes);
+				lostFlowHashTable = new DLeftHashTableFlowId2(tableSize, type, inputStream.size(), D, flowSizes);
 
 			//Collections.shuffle(inputStream); // randomizing the order
 
@@ -256,7 +256,7 @@ public class TopKIdentifierFlowId2{
 				underEstimateAmount[k_index] += curUnderEstimation/denominator;
 				//System.out.println(numWithin1Dev[k_index] + " " + numWithin2Dev[k_index]);
 
-				if ((type == SummaryStructureType.OverallMinReplacement || type == SummaryStructureType.BasicHeuristic) && k_index == 0){
+				/*if ((type == SummaryStructureType.OverallMinReplacement || type == SummaryStructureType.BasicHeuristic) && k_index == 0){
 					int[] keysPerBucket = lostFlowHashTable.getKeysPerBucket();
 					FlowIdWithCount[] flows = lostFlowHashTable.getBuckets();
 					for (int i = 0; i < keysPerBucket.length; i++){
@@ -270,7 +270,7 @@ public class TopKIdentifierFlowId2{
 						System.err.println(keysPerBucket[i]+ "," + isFP + "," + isTP + "," + thisdeviation);
 						keysSeen[k_index] += keysPerBucket[i];
 					}
-				}
+				}*/
 			}
 		}
 
@@ -282,7 +282,7 @@ public class TopKIdentifierFlowId2{
 
 		for (int k_index = 0; k_index < k.length; k_index++){
 			System.out.print(tableSize + "," + k[k_index] + "," + D + ",");
-			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/observedSize[k_index] + ",");
+			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/(flowSizes.size() - k[k_index]) + ",");
 			System.out.print((double) numberOfFalseNegatives[k_index]/numberOfTrials/expectedSize[k_index] + ",");
 			System.out.print(expectedSize[k_index] + "," + observedSize[k_index] + "," + (double) bigLoserPacketReported[k_index]/bigLoserPacketCount[k_index]);
 			System.out.print("," + cumDeviation[k_index]/numberOfTrials + "," + occupiedSlots[k_index]/tableSize/numberOfTrials + "," + duplicates[k_index]/tableSize/numberOfTrials);
@@ -318,7 +318,7 @@ public class TopKIdentifierFlowId2{
 		for (int i = 0; i < thres.length; i++)
 			thres[i] /= 11849078;*/
 
-		double thresh = 3800/10000000;
+		double thresh = 3800.0/10000000;
 		int numberOfTrials = 1;
 		int observedSize[] = new int[k.length];
 		int expectedSize[] = new int[k.length];
@@ -379,8 +379,10 @@ public class TopKIdentifierFlowId2{
 				flowMemoryFromSampling = new SampleAndHoldFlowId(totalMemory, type, inputPacketStream.size(), samplingProb);
 			/*else if (type == SummaryStructureType.UnivMon)
 				univmon = new UnivMon(totalMemory, type, inputPacketStream.size(), k[k_index], thres[k_index]);*/
-			else
+			else{
+				//System.out.println(thresh + " in topk file");
 				cmsketch = new CountMinFlowIdWithCache((totalMemory - cacheSize)*15/2, type, inputPacketStream.size(), D, cacheSize, thresh, k[k.length - 1]);
+			}
 
 			for (Packet p : inputPacketStream){
 				if (type == SummaryStructureType.SampleAndHold)
@@ -561,7 +563,7 @@ public class TopKIdentifierFlowId2{
 		
 		for (int k_index = 0; k_index < k.length; k_index++){
 			System.out.print(totalMemory + "," + cacheSize + "," + k[k_index] + "," + D + ",");
-			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/observedSize[k_index] + ",");
+			System.out.print((double) numberOfFalsePositives[k_index]/numberOfTrials/(flowSizes.size() - k[k_index]) + ",");
 			System.out.print((double) numberOfFalseNegatives[k_index]/numberOfTrials/expectedSize[k_index] + ",");
 			System.out.print(expectedSize[k_index] + "," + observedSize[k_index] + "," + (double) hhPacketReported[k_index]/hhPacketCount[k_index]);
 			System.out.print("," + cumDeviation[k_index]/numberOfTrials + "," + occupancy[k_index]/numberOfTrials + "," + thr_totalPackets + "," + controllerReportCount[k_index]/numberOfTrials + ",");
@@ -637,8 +639,8 @@ public class TopKIdentifierFlowId2{
 		/* m measurements */
 		final int k[] = {150 /*30, 60, 120, 150, 240, 300*/};
 		//final int tableSize[] = {100/*, 150, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200};
-		//final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 3000, 3600, 4200, 4500, 4800};
-		final int tableSize[] = {1200};
+		final int tableSize[] = {300, 600, 900, 1200, 1500, 1800, 2100, 2400, 3000, 3600, 4200, 4500, 4800};
+		//final int tableSize[] = {1200};
 		//final int tableSize[] = {300, 900, 1500, 2100, 3000, 6000, 9000, 12000};
 
 		if (args[2].equals("runTrial"))	{
