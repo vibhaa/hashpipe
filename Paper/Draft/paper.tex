@@ -6,6 +6,23 @@
 \makeatletter \@input{texdirectives} \makeatother
 
 %%%%%%%%%%%%%%%%%%%%  INCLUDES  %%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[normalem]{ulem}
+\usepackage{amsmath, amssymb}
+\usepackage{fullpage}
+\usepackage{framed}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+%\usepackage{algorithm2e}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage{caption}
+\usepackage{wrapfig}
+\usepackage{lipsum}
+\usepackage[titletoc]{appendix}
+\usepackage{hyperref} % http://ctan.org/pkg/hyperref
+\hypersetup{%
+  colorlinks = true,
+  linkcolor  = black
+}
 \usepackage{csquotes}
 \usepackage{xspace}
 \usepackage{ragged2e}
@@ -22,13 +39,32 @@
 \usepackage{lineno}
 \def\linenumberfont{\footnotesize}
 \usepackage{enumitem}
-\usepackage[justification=centering, font=small]{caption}
+\usepackage[justification=justified, font=small]{caption}
 \usepackage[export]{adjustbox}
 \usepackage{bm}
 \usepackage{amstext}
 \usepackage{tabularx}
 \usepackage{balance}
 \usepackage{authblk}
+\usepackage[export]{adjustbox}
+
+\usepackage{listings}
+\usepackage{color}
+
+\lstset{
+  columns=flexible,
+  mathescape,
+  keepspaces=true,
+  escapeinside={(*}{*)},
+  basicstyle=\ttfamily\small
+}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\graphicspath{ {figures/} }
 
 \makeatletter
 \renewcommand\AB@affilsepx{ , \protect\Affilfont}
@@ -78,9 +114,24 @@
 
 \newcommand{\ignore}[1]{}
 \newcommand{\TODO}[1]{\ifdraft {\color{red} \textbf{TODO:} {#1}} \fi }
-\newcommand{\dpw}[1]{\ifdraft {\color{red} \textbf{DPW:} {#1}} \fi }
 \newcommand{\jrex}[1]{\ifdraft {\color{orange} \textbf{JR:} {#1}} \fi }
-\newcommand{\mta}[1]{\ifdraft {\color{blue} \textbf{MTA:} {#1}} \fi }
+
+\newcommand{\ngs}[1]{{\color{red} \textbf{Srinivas:} {#1}}}
+\newcommand{\vls}[1]{{\color{blue} \textbf{Vibhaa:} {#1}}}
+\renewcommand{\eg}{{\em e.g., }}
+\newcommand{\etal}{{\em et al.}}
+\newcommand{\vs}{{\em vs. }}
+\renewcommand{\ie}{{\em i.e., }}
+\newcommand{\Sec}[1]{\S\ref{#1}}
+\newcommand{\App}[1]{Appendix~\ref{#1}}
+\newcommand{\TheSystem}{HashPipe\xspace}
+\newcommand{\Baseline}{HashParallel\xspace}
+\newcommand{\spacesaving}{Space Saving\xspace}
+\newcommand{\NewPara}[1]{\noindent{\bf #1}}
+\newcommand{\Alg}[1]{Algorithm~\ref{algo:#1}}
+\newcommand{\Fig}[1]{Fig.~\ref{fig:#1}}
+
+%%%%% THE location for new commands %%%%
 
 \usepackage[hang,flushmargin]{footmisc} 
 \usepackage{textcomp}
@@ -142,22 +193,25 @@
 %%%%%%%%%%%%%%%%%%%%  TITLE/AUTHORS  %%%%%%%%%%%%%%%%%%%%%
 
 \date{}
-\title{\ttlfnt{Heavy Hitter Detection in Commodity Switches}}
-%\author[1]{}
-%\author[1]{} 
-%\author[2]{}
-%\author[1]{}
-%\author[1]{}
-%\affil[1]{Princeton University}
-%\affil[2]{}
-%\setcounter{Maxaffil}{0}
+\title{\ttlfnt{Smoking Out the Heavy-Hitter Flows with HashPipe}}
+
+\author[1]{Vibhaalakshmi Sivaraman}
+\author[2]{Srinivas Narayana}
+\author[1]{Ori Rottenstreich}
+\author[3]{\\S. Muthukrishnan}
+\author[1]{Jennifer Rexford}
+\affil[1]{Princeton University}
+\affil[2]{MIT CSAIL}
+\affil[3]{Rutgers University}
+\setcounter{Maxaffil}{0}
 \renewcommand\Affilfont{\small}
-\author{
-Paper \# \ "paper num",  
-\pageref{lastpage} pages
+
+%\author{
+%Paper \# \ "paper num",  
+%\pageref{lastpage} pages
 %\aufnt{\AUTHORS} \\
 %\affaddr{Affiliation}
-}
+%}
 
 %%%%%%%%%%%%%%%%%%%%  START OF DOCUMENT  %%%%%%%%%%%%%%%%%
 \begin{document}
@@ -175,12 +229,18 @@ Paper \# \ "paper num",
 
 \input{introduction}
 \input{problem}
-\input{algorithm}
-\input{analysis}
-\input{evaluation}
-\input{discussion}
 \input{related}
-\input{conclusion}\label{lastpage}
+\input{algorithm}
+\input{prototype}
+\input{evaluation}
+\input{other-related}
+%%\input{discussion}
+\input{conclusion}
+\label{lastpage}
+
+%\begin{appendices}
+%\input{analysis}
+%\end{appendices}
 
 \end{sloppypar}
 

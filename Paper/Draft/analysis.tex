@@ -1,39 +1,41 @@
-\documentclass[10pt]{article}
-\title{A ``Probabilistic'' Space Savings}
-\author{***}
-\date{Oct 10 2016}
-
-\usepackage{amsmath}
-\usepackage{amsthm}
+%%\section{Analysis}
 
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 
-\newcommand{\eg}{{\em e.g.,} }
-\newcommand{\ie}{{\em i.e.,} }
+%Discuss heaps/ideal space-saving to be used as reference
 
-\begin{document}
-\maketitle
+%\subsection{All probes available at once}
+%\subsubsection{Aggregate Model}
+%\subsubsection{Cash Register Model}
+%\subsection{Accomodating HW constraints}
+%\subsubsection{Aggregate Model}
+%\subsubsection{Cash Register Model}
 
-\section{The algorithm}
+%% \subsection{Algorithm}
 
-Let table $T$ represent a table of items and corresponding counts. The table has
-a fixed size $M$, with some table locations possibly empty. A nonempty table
-location contains an element $e$ and a corresponding counter $c$, denoted as
-$(e,c)$. Each incoming item $p$, \eg a packet, is independently hashed to $d$
-locations in table $T$, denoted by the set $H_p$. Consider the following
-algorithm.\\
+%% Let table $T$ represent a table of items and corresponding counts. The table has
+%% a fixed size $M$, with some table locations possibly empty. A nonempty table
+%% location contains an element $e$ and a corresponding counter $c$, denoted as
+%% $(e,c)$. Each incoming item $p$, \eg a packet, is independently hashed to $d$
+%% locations in table $T$, denoted by the set $H_p$. Consider the following
+%% algorithm.\\
 
-\noindent For each item $p$\\
-hash $p$ to table locations $H_p = \{l_1, l_2, \ldots, l_d\}$ with $l_i = (e_i, c_i)$\\
-if $\exists i: p = e_i$ then $c_i \leftarrow c_i + 1$\\
-else if $\exists j: l_j$ empty then $e_j \leftarrow p; c_j \leftarrow 1$\\
-else let $k \leftarrow \mathrm{arg min}_{k \in \{1,\ldots,d\}} \ c_k; e_k \leftarrow p; c_k \leftarrow c_k + 1$\\
+%% \noindent For each item $p$\\
+%% hash $p$ to table locations $H_p = \{l_1, l_2, \ldots, l_d\}$ with $l_i = (e_i, c_i)$\\
+%% if $\exists i: p = e_i$ then $c_i \leftarrow c_i + 1$\\
+%% else if $\exists j: l_j$ empty then $e_j \leftarrow p; c_j \leftarrow 1$\\
+%% else let $k \leftarrow \mathrm{arg min}_{k \in \{1,\ldots,d\}} \ c_k; e_k \leftarrow p; c_k \leftarrow c_k + 1$\\
 
-\subsection{Overestimation errors}
+\section{Overestimation Errors}
+\label{sec:analysis}
 
-In the above algorithm, it is possible to overestimate the frequency of an
-item. This occurs when item $e_i$ replaces another item $e_j$ in $T$, where
+We show that \Baseline (\Alg{Baseline}) does not overestimate keys by too much
+when it samples the minimum of $d$ slots in the table, instead of the entire
+table.
+
+First, note how it is possible to overestimate the frequency of an item
+$e_i$. Suppose on its insertion $e_i$ replaces another item $e_j$ in $T$, where
 $e_j$ is the element with the minimum counter among locations that $e_i$ hashed
 to. Independent of the true count of item $e_i$ so far (say, zero), its counter
 is set to $c_j + 1$.
@@ -80,34 +82,35 @@ $1 - \delta^d$, we have $min_i \leq N/\delta M$.
 
 \end{proof}
 
-\subsection{Underestimation errors}
+%% \subsection{Underestimation errors}
 
-It is possible to underestimate the counts of items within the table, or miss
-heavy items entirely, through this algorithm. To see why, consider a simple
-example with $d=2$. Suppose item $e_i$ hashes to two locations $l_1$ and $l_2$,
-occupying location $l_1$ with counter $c_1$. Further, suppose that $l_2$ is
-occupied with another item with count $c_2^{evict} < c_1$. Now an item $e_j$ may
-enter $T$, hashing to locations $l_1$ and $l_3$, where the corresponding counter
-value $c_3 > c_1$. Then $e_j$ will evict $e_i$. However, if $e_i$ returns, the
-counter at $l_2$ may still have a smaller value than the original count of
-$e_i$, \ie $c_2^{reappear} < c_1$. Then the current estimate of item $i$ would
-be smaller than its true count by $c_1 - c_2^{reappear}$. If $c_2^{reappear}$ is
-small enough that $e_i$ is evicted later, and $e_i$ never reappears, the
-algorithm may also miss $e_i$ entirely from the table.
+%% It is possible to underestimate the counts of items within the table, or miss
+%% heavy items entirely, through this algorithm. To see why, consider a simple
+%% example with $d=2$. Suppose item $e_i$ hashes to two locations $l_1$ and $l_2$,
+%% occupying location $l_1$ with counter $c_1$. Further, suppose that $l_2$ is
+%% occupied with another item with count $c_2^{evict} < c_1$. Now an item $e_j$ may
+%% enter $T$, hashing to locations $l_1$ and $l_3$, where the corresponding counter
+%% value $c_3 > c_1$. Then $e_j$ will evict $e_i$. However, if $e_i$ returns, the
+%% counter at $l_2$ may still have a smaller value than the original count of
+%% $e_i$, \ie $c_2^{reappear} < c_1$. Then the current estimate of item $i$ would
+%% be smaller than its true count by $c_1 - c_2^{reappear}$. If $c_2^{reappear}$ is
+%% small enough that $e_i$ is evicted later, and $e_i$ never reappears, the
+%% algorithm may also miss $e_i$ entirely from the table.
 
-\noindent {\bf Speculative proof ideas.} We want to show that the impact of
-underestimations on counter values in $T$ is not significant. Suppose we call
-$c_1 - c_2^{reappear}$ the {\em underestimation error.} One specific idea is to
-show that the {\em average-case} underestimation error for items in $T$ is
-small, as follows.
+%% \noindent {\bf Speculative proof ideas.} We want to show that the impact of
+%% underestimations on counter values in $T$ is not significant. Suppose we call
+%% $c_1 - c_2^{reappear}$ the {\em underestimation error.} One specific idea is to
+%% show that the {\em average-case} underestimation error for items in $T$ is
+%% small, as follows.
 
-For the underestimation error to be positive-valued, it is necessary that there
-is an item $e_j$ hashing to $d$ locations---including the location that $e_i$
-resides in---with $d-1$ counter values each larger than $c_1$. When $c_1$ is
-large, the likelihood of $d-1$ randomly chosen counters each being larger than
-$c_1$ must be small. On the other hand, if $c_1$ is small, the underestimation
-error is itself small because the gap between $c_1$ and $c_2^{reappear}$ is
-likely to be small. Putting these two cases together, we hope to show that the
-average-case underestimation error for any item must be small.
+%% For the underestimation error to be positive-valued, it is necessary that there
+%% is an item $e_j$ hashing to $d$ locations---including the location that $e_i$
+%% resides in---with $d-1$ counter values each larger than $c_1$. When $c_1$ is
+%% large, the likelihood of $d-1$ randomly chosen counters each being larger than
+%% $c_1$ must be small. On the other hand, if $c_1$ is small, the underestimation
+%% error is itself small because the gap between $c_1$ and $c_2^{reappear}$ is
+%% likely to be small. Putting these two cases together, we hope to show that the
+%% average-case underestimation error for any item must be small.
 
-\end{document}
+% want to say that underestimatin is no more than constant times N/M, how many times it gets evicted and everytime it gets evicted what the underestimate amount
+% 
