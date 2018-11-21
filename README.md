@@ -1,9 +1,4 @@
-# tutorials
-P4 language tutorials
-
-# iw15
-
-Independent research project directed at identifying the flows that contribute to majority of packets between two points on a given network
+Project aimed at identifying the flows that contribute to majority of packets between two points on a given network. THe final paper can be found [here](https://dl.acm.org/citation.cfm?id=3063772).
 
 All the evaluations used data from the CAIDA Traces from  https://data.caida.org/datasets/passive-2016/equinix-chicago/20160218-130000.UTC/ and datacenter traces from http://pages.cs.wisc.edu/~tbenson/IMC10_Data.html. These were converted to .csv files with the srcip, dstip, protocol, srcport and dstport using tshark. They were then split them into chunks of 10M packets each after which `TopKIdentifierFlowId` was run on them. `TopKIdentifierFlowId` also needs a file with the actual flow size, which can be obtained by running FindFlowSize. This groups the packets from the csv by 5-tuple giving you a 5-tuple flowid and the associated count for a flow.
 
