@@ -1,0 +1,115 @@
+\subsection{Existing Solutions}\label{sec:related}
+
+The problem of finding heavy flows in a network is an instance of the ``frequent
+items'' problem, which is extremely well studied in the streaming algorithms
+literature~\cite{hh-cormode-survey}.
+%
+While high accuracy and low overhead are essential to any heavy hitter detection
+approach, we are also specifically interested in implementing these algorithms
+within the constraints of emerging programmable switches
+(\Sec{sec:intro}).
+%
+We classify the approaches into two broad categories, {\em sampling} and {\em
+  streaming,} discussed below.
+%% \jrex{I think it'd be better to start with sketches like count-min sketch that
+%%   make no effort to thin out or evict small flows, so you can transition from
+%%   that to schemes that do such as count-min-with-cache, sample-and-hold, and
+%%   finally space-savings.}
+
+\NewPara{Packet sampling} using NetFlow~\cite{cisco-netflow} and sFlow~\cite{sflow}
+is commonly implemented in routers today. These technologies record a subset of
+network packets by sampling, and send the sampled records to collectors for
+analysis. To keep packet processing overheads and data collection bandwidth low,
+NetFlow configurations in practice use aggressively low sampling probabilities,
+\eg 1\% or even 0.01\% \cite{sflow-sampling-rate, netflow-sampling-rate}. Such
+undersampling can impact the estimation accuracy.
+
+Sample and hold \cite{estan2002new} enhances the accuracy of packet sampling by
+keeping counters for {\em all} packets of a flow in a ``flow table,'' once a
+packet from that flow is sampled. However, implementing the flow table is
+challenging, since the flow table requires a memory that is %sufficiently fast (to be read/written to by each packet) 
+sufficiently large (to hold the necessary flow
+entries).
+
+Designing a large flow table\footnote{Large exact-match lookups are typically
+  built with SRAM, as large TCAMs are expensive.} for fast packet {\em lookup}
+is well-understood: hash table implementations are already common in switches,
+for example in router forwarding tables and NetFlow~\cite{li2016flowradar}.
+%
+However, it is challenging to handle hash collisions when {\em adding} flows to
+the flow table, when a packet from a new flow is sampled.
+%
+Some custom hardware solutions combine the hash table with a ``stash'' that
+contains the overflow, \ie colliding entries, from the hash
+table~\cite{sram-tcam-learning}. But this introduces complexity in the switch
+pipeline, and typically involves the control plane to add entries into
+the stash memory.
+%
+Ignoring such complexities, we evaluate sample and hold in \Sec{sec:evaluation}
+by liberally allowing the flow table to lookup packets {\em anywhere} in a {\em
+  list} that can grow up to a fixed size.
+
+\NewPara{Streaming algorithms} implement data structures with bounded memory size
+and processing time per packet, while processing {\em every packet} in a large
+stream of packets in one pass. The algorithms are designed with provable
+accuracy-memory tradeoffs for specific statistics of interest over the
+packets. While these features make the algorithms attractive for network
+monitoring, the specific algorithmic operations on each packet determine
+feasibility on switch hardware.
+
+Sketching algorithms like count-min sketch~\cite{cormode2005improved} and count
+sketch~\cite{charikar2002finding} use per-packet operations such as hashing on
+packet headers, incrementing counters at hashed locations, and determining the
+minimum or median among a small number of the counters that were hashed
+to. These operations can all be efficiently implemented on switch
+hardware~\cite{yu2013software}.
+%
+However, these algorithms do not track the flow identifiers of packets, and hash
+collisions make it challenging to ``invert'' the sketch into the constituent
+flows and counters.
+%
+Simple workarounds like collecting packets that have high flow count estimates
+in the sketch could result in significant bandwidth overheads, since most
+packets from heavy flows will have high estimates.
+%
+
+Techniques like group testing~\cite{group-testing}, reversible sketches
+\cite{schweller2004reversible}, and FlowRadar~\cite{li2016flowradar} can decode
+keys from hash-based sketches. 
+%
+However, it is challenging to read off an accurate counter value for a packet in
+the switch pipeline itself since the decoding happens off the fast packet-processing
+path.
+%
+%
+%Further, all the above approaches use the available memory to estimate {\em all}
+%flows---not just the heavy ones.
+%%(i) take up too many counter updates per packet
+%%(ii) use too many counters overall too! accuracy-memory tradeoff not great
+
+Counter-based algorithms~\cite{misra1982finding,manku2002approximate} focus on measuring the heavy
+items, maintaining a table of flows and corresponding counts. They employ
+per-counter increment and subtraction operations, but potentially all counters
+in the table are updated during some flow insertions.
+Updating multiple counters in a single stage is challenging within the deterministic time budget for each packet.
+%Such worst-case table updates are not possible within the deterministic time budget for each packet.
+
+\Spacesaving~\cite{metwally2005efficient} is a counter-based algorithm
+that only uses $O(k)$ counters to track $k$ heavy flows, achieving the best
+memory usage possible for a deterministic heavy-hitter algorithm. \Spacesaving
+only updates one counter per packet, but requires finding the item with the
+minimum counter value in the table. Unfortunately, scanning the entire table on
+each packet, or finding the minimum in a table efficiently, is not directly
+supported on emerging programmable hardware (\Sec{sec:intro}). Further,
+maintaining data structures like sorted linked
+lists~\cite{metwally2005efficient} or priority queues~\cite{pifo} requires
+multiple memory accesses within the per-packet time budget. %% Recently proposed
+%% advances in switch hardware may make such data structures
+%% possible~\cite{pifo}.
+%
+However, as we show in \Sec{sec:algorithm}, we are able to adapt the key ideas
+of the \spacesaving algorithm and combine it with the functionality of emerging
+switch hardware to develop an effective heavy hitter algorithm.
+%adapts the key ideas of
+%the space saving algorithm and leverages emerging switch hardware with simple
+%data structures.

@@ -1,0 +1,189 @@
+\section{Introduction}
+\label{sec:intro}
+
+%Accurate measurement of network traffic is important for management tasks,
+%%  such as traffic engineering, provisioning capacity, and diagnosing and
+%% stopping DoS attacks.
+%as lack of visibility into the network can lead to poor performance and costly
+%outages.
+%% Further, as packet-processing becomes increasingly flexible
+%% \cite{mckeown2008openflow, bosshart2014p4, domino}, it is important to drive
+%% fine-grained network control through accurate monitoring data. 
+%As a result, both industry and academia have actively invested in improving the
+%state of the art~\cite{cisco-netflow, estan2002new, int, yu2013software,
+ % li2016flowradar, univmon}.
+
+Many network management applications can benefit from finding the set of flows
+contributing significant amounts of traffic to a link: for example, to relieve
+link congestion~\cite{microTE}, to plan network
+capacity~\cite{att-deriving-traffic-demands}, to detect network anomalies and
+attacks~\cite{network-wide-anomalies}, or to cache forwarding table
+entries~\cite{LossyToN}.
+%
+Further, identifying such ``heavy hitters'' at small time scales (comparable to
+traffic variations~\cite{hedera, microTE}) can enable dynamic routing of heavy
+flows~\cite{devoflow, planck} and dynamic flow scheduling~\cite{pifo}.
+
+It is desirable to run heavy-hitter monitoring at all switches in the network
+all the time, to respond quickly to short-term traffic variations. {\em Can
+  packets belonging to heavy flows be identified as the packets are processed in
+  the switch}, so that switches may treat them specially?
+
+Existing approaches to monitoring heavy items make it hard to achieve
+reasonable accuracy at acceptable overheads (\Sec{sec:related}). While packet
+{\em sampling} in the form of NetFlow ~\cite{cisco-netflow} is widely deployed,
+the CPU and bandwidth overheads of processing sampled packets in software make
+it infeasible to sample at sufficiently high rates (sampling just 1 in 1000
+packets is common in practice~\cite{sflow-sampling-rate}). An alternative
+is to use sketches, \eg \cite{cormode2005improved, li2016flowradar,
+  yu2013software, univmon} that {\em hash} and {\em count} all packets in switch
+hardware. However, these systems incur a large memory overhead to retrieve the heavy hitters
+%required to estimate counts for {\em all} flows-
+--- ideally, we wish to use memory proportional to the number of the heavy flows (say the top hundred). There may be tens of thousands of
+active flows any minute on an ISP backbone link (\Sec{sec:evaluation}) or a data
+center top-of-rack switch \cite{theo-dc-traffic}.
+
+Emerging programmable switches~\cite{RMT,barefoot-tofino,cavium-xpliant} allow
+us to do more than sample, hash, and count, which suggests opportunities to run
+novel algorithms on switches. While running at line rates of
+10-100 Gbps per port over 10-100 ports, these switches can be programmed to
+maintain state over multiple packets, \eg to keep flow identifiers as keys
+along with counts. Stateful manipulations can also be {\em pipelined}
+over multiple stages, with the results carried by the packet from one stage to
+the next and compared to stored state in subsequent stages.
+
+However, switches are also constrained by the need to maintain high
+packet-processing throughput, having:
+\begin{itemize}
+\item a deterministic, small time budget (1 ns \cite{RMT}) to manipulate state
+  and process packets at each stage;
+\item a limited number of accesses to memory storing state at each stage (typically just one read-modify-write);
+\item a limited amount of memory available per stage (\eg 1.4MB shared across forwarding and monitoring~\cite{RMT}); 
+%\item a limited amount of computation and boolean operations that are doable at each stage; and
+\item a need to move most packets just once through the pipeline, to
+  avoid stalls and reduced throughput
+  (``feed-forward''~\cite{minions}).
+\end{itemize}
+%% accesses to the state per stage (typically just one), limited per-stage fast
+%% memory (\eg 1.4MB~\cite{bosshart2014p4} SRAM shared across everything on the
+%% switch), and a ``feed-forward'' model of processing where packets cannot return
+%% to a previous stage in the pipeline without costly ``recirculation" of the
+%% traffic.
+
+%% % what the problem is and Why network operators want to know information, do people really need this?
+%% Network measurements are crucial to effective network management. These measurements play a critical role in traffic engineering, understanding network vulnerabilities, preventing DDoS attacks, scalable threshold accounting, and scalable queue management \cite{estan2002new}. Particularly, identifying the flows that make the largest contribution to traffic across a particular link helps us reason about where congestion may be arising from, denial-of-service attacks and high-level trends in the traffic patterns. Knowing the heavy hitters is useful not only for reporting to the network operator, but also for acting on heavy hitters directly in the data plane, for example, to load balance traffic such that heavy hitters (elephants) are sent on disjoint paths. Ideally, network operators want to be able to gather these measurements from all points in a network, throughout the period when a network is on % rephrase this
+%% and without imposing any overheads or slowing down the per-packet processing speed.
+
+%% % Next generation of switching chips that can do these things
+%% In the meantime, there has been significant development in the hardware realm. The next generation of reconfigurable switch hardware \cite{bosshart2014p4} enables programmers/operators to specify customizable and useful state that is tracked directly in the data path of the packets on the switch. In fact, such data plane programs can manipulate this state in complex ways — both to choose which state is kept (which could be useful in deciding which flows to retain state for) and how that state is updated (helps decide between increment counters, merging multiple counters or resetting them). The fact that you could read such state directly in the data path also means you could choose to process packets in different ways based on the state: e.g., route heavy flows across different paths than short-lived flows. State can also be carried through the multiple stages in the packet processing pipeline within switches as metadata which could be used to differentiate between packets on a stage to stage basis. These switches are easily reconfigurable as opposed to custom-designed hardware. And all of this happens at the line rate supported by the switch, e.g., 64 ports of 10-100Gb/s!
+
+%% % downsides
+%% %there is exactly one location that we can read
+%% % it is not possible to read more than one in one stage, but you can make that up by pipelining the table and getting multiple reads across multiple stages
+%% % all ways are hands are tied behind back - do things in a pipelined fashion
+%% While these new switches offer a lot of programmability, they do come with a lot of constraints in order for programs to be feasible at line-rate. The amount of memory available on the chip is limited. This means that one cannot maintain data per TCP connection in a typical network \cite{li2016flowradar}. Further, state is local to each pipelined stage and the pipelined stages follow a {\em{feed-forward model}} {\em{i.e.}} a given packet cannot be sent back to an earlier stage in the pipeline since the pipelining enables the processing of multiple concurrent packets, one in each stage. Together, these two constraints imply that all modifications to the state associated with a particular stage need to be completed before the packet moves on to the next stage. Further, deterministic time operations are needed to maintain switch line-rate which makes ideas like scanning the entire register challenging. This also means that maintaining complex yet space-efficient data structures like a heap aren't feasible at line rate since the operations needed to keep them compact and sorted involve multiple reads and writes. 
+%% %Further, if there is a write back operation in the stage, that write back is dependent on exactly one read at the same location - essentially one atomic read, modify, operation - writing back to one location based on multiple reads might involve considerably longer clock cycles
+
+%% % time scale issues - sampling doesn't catch everything (netflow samples about 1 in thousand), how frequently you get information and how would you aggregate it
+%% % is link speed getting higher - would this imply that you have to sample at a lower rate - what should be the sampling rate if you want to report things at a certain rate because of the current link speed - NETFLOW is run on only certain switches, but we could do this on every switch - Overhead, accuracy and time of reporting - OpenSketch may have some point here
+%% %how is it done today - sampling, collecting info, netflow, etc
+%% %There is all this theory discussion, but most of them aren't used in practice
+%% %HH: both top K and thresholded: important --> obvious.
+%% The particular problem of heavy hitter detection, both in terms of identifying all flows with a size above a threshold or identify the Top-K flows by size, has been extensively researched (\cite{estan2002new}, \cite{schweller2004reversible}, \cite{cormode2005improved}, \cite{metwally2005efficient}, \cite{jose2011online}). However, we require schemes that ideally keep  a small amount of state, update that state in deterministic (constant) time, use a small number of memory accesses per packet, a small number of pipeline packet processing stages per packet and can read off accurate counts for each traffic aggregate in the data plane itself, to support “online” decisions for packets from heavy flows. And we require that all this be feasible with emerging programmable switch hardware \cite{RMT}. A majority of the algorithms (\cite{manku2002approximate}, \cite{misra1982finding}, \cite{li2016flowradar}) aren’t useful in practice because they do not satisfy one of these requirements.
+
+%% % table of related work You could even itemize the points, or make a small table showing how the existing schemes falter in one or more of these requirements.
+%% The few algorithms that can be implemented \ignore{\cite{estan2002new}, \cite{netflow}} are either based on sampling or  sketching techniques. While sampling-based approaches become less accurate as increasing link speeds \ignore{cite} force smaller sampling rates leading to higher chances of missing out on important flows, majority of sketching techniques (\cite{cormode2005improved}, \cite{li2016flowradar}, \cite{charikar2002finding}, \cite{cormode2005s}) are meant to maintain information for all flows and are hence not optimized to accurately report the heavy hitters alone. However, given the capabilities of newer and more programmable hardware, could we closely model one of the more space-efficient algorithm at line-rate without trading off much accuracy?
+
+% why is space-saving the right algorithm to go off from 
+% is there a case for controller overhead reduction? 
+% simplicity: (1) controller overhead reduction (2) low "complexity" in the data
+% plane (3) amount of information sent to the controller
+We present \TheSystem,  an algorithm to track the $k$ heaviest flows with high
+accuracy (\Sec{sec:algorithm}) within the features and constraints of
+programmable switches. \TheSystem maintains both the
+flow identifiers (``keys'') and counts of heavy flows in the switch, in a
+pipeline of hash tables. 
+%Packets flow from one stage to next and at each stage, the ``state'' carried by the packet maybe modified by the counts in that hash stage. This is distinct for example from generic multistage algorithms where the information passed between stages is contained in the program variables, whereas here the information flow is via the packets.  
+%We design a new heavy hitter detection algorithm using \TheSystem as follows. 
+When a packet hashes to a location in the first stage of the pipeline,
+its counter is updated (or initialized) if there is a {\em hit} (or an empty
+slot). If there is a {\em miss}, the new key is inserted at the expense of the
+existing key. In all downstream stages, the key and count of the
+item just evicted are carried along with the packet. The carried key is
+looked up in
+the current stage's hash table. Between the key looked up in the hash table and
+the one carried, the key with the {\em larger count} is retained in the hash
+table, while the other is either carried along with the packet to the next
+stage, or totally removed from the switch if the packet is at the last
+stage. Hence, \TheSystem ``smokes out'' the heavy keys within the limited
+available memory, using pipelined operation to sample multiple locations in the
+hash tables, and evicting lighter keys in favor of heavier
+keys, with updates to exactly one location per stage. %% Our algorithm is
+%% inspired by
+%% the strategy used by the {\em space-savings} algorithm
+%% \cite{metwally2005efficient}.\jrex{mention of the space-savings algorithm
+%% arises abruptly, leaving the reader wondering how similar it is.  maybe we
+%% could mention it earlier as a transition from the point that we need to keep
+%% space proportional to k.}
+
+We prototype \TheSystem  in P4~\cite{bosshart2014p4} (\Sec{sec:prototype}) and
+test it on the public-domain behavioral switch model \cite{p4-bm}. %% We also
+%% provide some basic analytical bounds for the estimation errors of our algorithm
+%% (\Sec{sec:analysis}). 
+We evaluate \TheSystem with packet traces obtained from an ISP backbone link
+(from CAIDA) and a data
+center, together containing over 500 million packets.
+%
+We show that \TheSystem can provide high accuracy
+(\Sec{sec:evaluation}).
+%
+In the backbone link trace, \TheSystem incurs less than 5\% false negatives and
+0.001\% false positives when reporting 300 heavy hitters (keyed by transport
+five-tuple) with just 4500 counters (less than 80KB) overall, while the trace
+itself contains 400,000 flows.
+%
+The errors both in false negatives and flow count estimations are lower among
+the heavier flows in the top $k$.
+%
+At 80KB of memory, \TheSystem outperforms
+sample and hold~\cite{estan2002new} by over $15\%$ and an enhanced version of the count-min sketch~\cite{cormode2005improved}
+by $3$-$4\%$ in terms of false negatives.
+
+%
+%% \TheSystem incurs lower false negative rates and count estimation errors
+%% on the heavier flows among the top $k$.
+%% Further, the heavier a flow is, the less likely it is to be missed, and the
+%% smaller its relative count estimation error.
+%% \TheSystem also incurs low error rates in identification and count estimation
+%% on %% the larger flows among the top $k$.
+%% \begin{itemize}
+%% \item An algorithm, \TheSystem, that maintains the top $K$ heavy items on switches
+%%   accurately with O($K$) counters;
+%% \item A prototype implementation of \TheSystem in P4;
+%% \item An analysis of the \TheSystem algorithm that bounds the over- and
+%%   under-estimation errors on average; and
+%% \item An evaluation with traces from an ISP backbone, which shows a false
+%%   positive and negative error rates of XXX.
+%% \end{itemize}
+
+%% In order to convert the space-saving algorithm
+%% into a version feasible on commodity hardware, we approximate the minimum by
+%% sampling a constant number of locations in the table and not the entire
+%% table. Further, we compute the minimum in a feed-forward manner by spreading
+%% state across multiple stages of the match-action table. This minimizes the
+%% number of reads per location as well as eliminates the need for packet
+%% re-circulation. Though making Space-Saving hardware amenable has some visible
+%% tradeoffs, using a memory of just xxx bytes, we could track all TCP connections
+%% heavier than a fraction xxx of overall traffic in the network with a xx\% false
+%% positive rate and xx\% false negative rate. The tracked flows had a xx\% average
+%% error in the counters. We also prototyped the algorithm in P4
+%% \cite{bosshart2014p4}. % and compile it to a target.
+
+
+% Main contribution: new algorithm that is implementable on hardware - sweet spot given the capabilities of emerging switch hardware
+
+%Section 2 could be just the related work
+
+
+
+

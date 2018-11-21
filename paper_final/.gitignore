@@ -1,0 +1,10 @@
+paper.brf
+texdirectives.tex
+*.log
+*.aux
+*.blg
+*.bbl
+paper.pdf
+paper.out
+comment.cut
+*.synctex.gz

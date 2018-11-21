@@ -1,0 +1,35 @@
+\section{Conclusion}\label{sec:conclusion}
+
+%In the paper, we studied the constraints switch architectures apply on
+%algorithm implementations in order to maintain high packet processing.
+%Focusing on heavy hitter detection, we design an algorithm that follows these
+%restrictions while still achieving high accuracy.
+
+In this paper, we proposed an algorithm to detect heavy traffic flows within the
+constraints of emerging programmable switches, and making this information
+available within the switch itself, as packets are processed. Our solution,
+\TheSystem, uses a pipeline of hash tables to track heavy flows preferentially,
+by evicting lighter flows from switch memory over time. We prototype \TheSystem
+with P4, walking through the switch programming features used to implement our
+algorithm. Through simulations on a real traffic trace, we showed that
+\TheSystem achieves high accuracy in finding heavy flows within the memory
+constraints of switches today.%%  while outperforming existing heavy-hitter
+%% detection schemes that use sampling and sketching.
+%% In this paper, we discussed the constraints imposed by switching architectures on
+%% algorithmic implemenations due to the need for high speed packet processing. In
+%% particular, we propose an algorithm for heavy hitter detection called \TheSystem
+%% that respects these restrictions while still achieving high accuracy. \TheSystem
+%% uses a pipeline of hash tables along with a local minimum computation at each
+%% pipeline stage to preferentially track the heavier flows. We also prototype the
+%% algorithm in P4. Through our simulations, we show that \TheSystem achieves lower
+%% error rates than existing sampling and sketching based approaches %like Sample
+%%                                 %and Hold and Count-Min Sketch 
+%% at comparable amounts of memory.
+%% We are further studying \TheSystem through synthetic workloads, additional
+%% optimizations to the algorithm, and theoretical analyses.
+
+%univmon, dataplane
+% assymmetric memory split
+%synthetic workloads
+%compiling to a target
+%extensive analysis

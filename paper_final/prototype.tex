@@ -1,0 +1,164 @@
+\section{HashPipe Prototype in P4}
+\label{sec:prototype}
+
+%- add details of p4 prototype
+%- code fragments?
+%- some details of barefoot compiler; and configurations there.
+%- p4 to OVS compiler?
+
+We built a prototype of \TheSystem using P4 version 1.1~\cite{p4-v1.1-spec}.  We
+verified that our prototype produced the same results as our HashPipe simulator
+by running a small number of artificially generated packets on the switch
+behavioral model \cite{p4-bm} as well as our simulator, and ensuring that the
+hash table is identical in both cases at the end of the measurement interval.
+
+\begin{figure}
+ \begin{lstlisting}[basicstyle=\footnotesize, caption=
+  HashPipe stage with insertion of new flow. Fields prefixed with m are metadata fields., label=q1:p4-code, captionpos=b, basicstyle=\footnotesize, breaklines = true,
+numbers=left, xleftmargin=2em,frame=single,framexleftmargin=2.0em]
+ action doStage1(){
+   mKeyCarried = ipv4.srcAddr;
+   mCountCarried = 0;
+  modify_field_with_hash_based_offset(mIndex, 0, stage1Hash, 32);
+
+   // read the key and value at that location
+   mKeyTable = flowTracker[mIndex];
+   mCountTable = packetCount[mIndex];
+   mValid = validBit[mIndex];
+
+   // check for empty location or different key
+   mKeyTable = (mValid == 0) ? mKeyCarried : mKeyTable;
+   mDif = (mValid == 0) ? 0 : mKeyTable -  mKeyCarried;
+
+   // update hash table
+   flowTracker[mIndex] = ipv4.srcAddr;
+   packetCount[mIndex] = (mDif == 0) ? mCountTable+1: 1;
+   validBit[mIndex] = 1;
+
+   // update metadata carried to the next table stage
+   mKeyCarried = (mDif == 0) ? 0 : mKeyTable;
+   mCountCarried = (mDif == 0) ? 0 : mCountTable;  
+}
+ \end{lstlisting}
+ \end{figure}
+
+At a high level, \TheSystem uses a match-action stage in the switch pipeline for
+each hash table. In our algorithm, each match-action stage has a single default
+action---the algorithm execution---that applies to every packet. Every stage
+uses its own P4 \emph{register arrays}---stateful memory that persists across
+successive packets---for the hash table. The register arrays maintain the flow
+identifiers and associated counts.
+%% In this context, every stage's P4
+%% registers act as a hash table where the flow identifiers and the associated
+%% counts are maintained. 
+The P4 action blocks for the first two stages are
+presented in Listings \ref{q1:p4-code} and \ref{q2:p4-code}; actions for
+further stages are identical to that of stage $2$. The remainder
+of this
+section walks through the P4 language constructs with specific references to
+their usage in our \TheSystem prototype.\\
+
+\noindent \textbf{Hashing to sample locations:} The first step of the action is
+to hash on the flow identifier (source IP address in the listing) with a custom
+hash function, as indicated in line $4$ of Listing \ref{q1:p4-code}. The result
+is used to pick the location where we check for the key. The P4
+behavioral model \cite{p4-bm} allows customized hash function definitions. We
+use hash functions of the type $(a_i\cdot x + b_i)\%p$ where the chosen $a_i,
+b_i$ are co-prime to ensure independence of the hash functions across
+stages. Hash functions of this sort are implementable on hardware and have
+been used in prior work~\cite{univmon,li2016flowradar}.
+%% If the key is absent,
+%% the flow is used as one of the samples for approximating the minimum. 
+
+\noindent \textbf{Registers to read and write flow statistics:} The flows are
+tracked and updated using three registers: one to track the flow identifiers,
+one for the packet count, and one to test validity of each table index. The
+result of the hash function is used to index into the registers for reads and
+writes. Register reads occur in lines $6$-$9$ and register writes occur in lines
+$15$-$18$ of Listing \ref{q1:p4-code}. When a particular flow identifier is read
+from the register, it is checked against the one currently being
+carried. Depending on whether there is a match, either the value $1$ is written
+back or the current value is incremented by $1$.
+
+\noindent \textbf{Packet metadata for tracking current minimum:} The values read
+from the registers are placed in packet metadata since we cannot test conditions
+directly on the register values in P4. This enables us to compute the minimum of
+the carried key and the key in the table before writing back into the register
+(lines $11$-$13$ of Listing \ref{q1:p4-code} and lines $3$, $6$, and $9$ of
+Listing \ref{q2:p4-code}). Packet metadata also plays a crucial role in
+conveying state (the current minimum flow id and count, in this case) from one
+stage to
+another. The metadata is later used to compute the sample minimum. The updates
+that
+set these
+metadata across stages are similar to lines $20$-$22$ of Listing
+\ref{q1:p4-code}.
+
+\begin{figure}
+ \begin{lstlisting}[basicstyle=\footnotesize, caption=
+HashPipe stage with rolling minimum. Fields prefixed with m are metadata fields., label=q2:p4-code, captionpos=b, basicstyle=\footnotesize, breaklines=true,
+numbers=left, xleftmargin=2em,frame=single,framexleftmargin=2.0em,escapeinside={(*}{*)}]
+action doStage2{
+ (*$\cdots$*)
+ mKeyToWrite =  (mCountInTable <  mCountCarried) ? mKeyCarried : mKeyTable));
+ flowTracker[mIndex] = (mDif == 0) ? mKeyTable : mKeyToWrite;
+
+ mCountToWrite =  (mCountTable < mCountCarried) ? mCountCarried : mCountTable;
+ packetCount[mIndex] = (mDif == 0) ? (mCountTable + mCountCarried) :  mCountToWrite;
+
+ mBitToWrite = (mKeyCarried == 0) ? 0 : 1);
+ validBit[mIndex] = (mValid == 0) ? mBitToWrite : 1);
+ (*$\cdots$*)
+}
+\end{lstlisting}
+\end{figure}
+
+\noindent \textbf{Conditional state updates to store local maximum:} The first
+pipeline stage involves a conditional update to a register to distinguish a hit
+and a miss for the incoming packet key in the table (line 17,
+Listing~\ref{q1:p4-code}).
+%
+Subsequent stages must also write back different values to the table key and
+count registers, depending on the result of the lookup (hit/miss) and a
+comparison of the flow counts.
+%
+Accordingly, we perform a conditional write into the flow id and count registers
+(lines 4 and 7, Listing~\ref{q2:p4-code}).
+%
+%This ensure than an update happens if and only if the flow in our metadata is
+%larger than the flow currently in the table, the flow matches the entry in the
+%table or if the location in the table is currently empty.
+%
+Such conditional state updates are feasible at line rate~\cite{domino,minions}.
+%% If an update is not needed, the metadata simply continues to the next stage
+%% in the pipeline. These kinds of conditional updates are possible at line
+%% rate~\cite{domino,minions}.
+
+%Our implementation uses version 1.1 of P4 since we use ternary operators for our conditional updates that aren't supported in previous versions. There is no compiler, currently, to compile down P4 version 1.1 to a hardware target. However, the only addition in version 1.1 from the supported version 1.0 other than syntactic sugar around assignment statements, is the ability to perform a read, test on a condition and a consequent update to a register location as opposed to a simple read, modify, write. However, these conditional updates are possible at line-rate (\cite{domino}, \cite{tpp}) and there will be a compiler to compile them down to hardware in the near future \vls{@Srinivas,is this needed?}.
+
+\iffalse
+\begin{figure}[h]
+\lstinputlisting[language=c]{stage2.c}
+\caption{Second and subsequent stages in our scheme where incoming flow is compared against the flow in the location that it hashes to and a conditional update is made depending on which of the two is larger in size currently; The code is identical to the action block from Stage 1 except that the update to the hash table (lines 18 - 22) is replaced with the conditional update in this figure}
+\label{fig:Stage2P4}
+\lstset{numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt, escapechar=`,linewidth=8cm}
+\end{figure}
+\fi
+
+%Once again, the empty location condition is subsumed under the match condition since we merely need to increment the counter with the number of packets carried in either case. However, we do need a conditional update to determine whether we need to overwrite the key in the location or not in the event of a mismatch, which is why our algorithm cannot be implemented on P4 supported hardware at the moment, but will be implementable in the near future.
+
+\iffalse
+\begin{figure}[h]
+\lstinputlisting[language=c]{stage1.c}
+\caption{First stage in our scheme where incoming flow is placed in the location it hashes to with either value 1 (key mismatch) or current count + 1 (key match)}
+\label{fig:Stage1P4}
+\end{figure}
+\fi
+
+\iffalse
+\begin{figure*}[h]
+ \includegraphics[width=\textwidth,height=12cm]{figures/Code.pdf}
+ \caption{First stage in our scheme where incoming flow is placed in the location it hashes to with either value 1 (key mismatch) or current count + 1 (key match)}
+\label{fig:P4}
+\end{figure*}
+\fi

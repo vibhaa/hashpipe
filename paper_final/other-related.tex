@@ -1,0 +1,65 @@
+\section{Related Work}
+\label{sec:other-related}
+
+\NewPara{Applications that use heavy hitters.} Several applications
+use information about heavy flows to do better traffic
+management or monitoring. DevoFlow~\cite{devoflow} and
+Planck~\cite{planck} propose exposing heavy flows with low overhead as ways to
+provide better visibility and reduce congestion in the
+network. UnivMon~\cite{univmon} uses a top-$k$ detection sketch internally as a
+subroutine in its ``universal'' sketch, to determine more general statistics
+about the network traffic. There is even a P4 tutorial application on switch
+programming, that performs heavy hitter detection using a count-min-sketch-like
+algorithm~\cite{p4-sigcomm-tutorial-hh-example}.
+
+\NewPara{Measuring per-flow counters.} Prior works such as
+FlowRadar~\cite{li2016flowradar} and CounterBraids~\cite{counterbraids}
+%% others, \eg~\cite{li-randomized-counter-sharing}
+have proposed schemes to
+measure accurate per-flow traffic counters. Along similar lines, hashing schemes
+like cuckoo hashing~\cite{cuckoo-hashing} and d-left
+hashing~\cite{vocking2003asymmetry} can keep per-flow state memory-efficiently,
+while providing fast lookups on the state. Our goal is not to measure or keep
+all flows; just the heavy ones. We show (\Sec{sec:evaluation}) that \TheSystem
+uses 2-3 orders of magnitude smaller memory relative to having per-flow state
+for all active flows, while catching more than 90\% of the heavy flows.
+
+\NewPara{Other heavy-hitter detection approaches.} The multi-resolution tiling
+technique in ProgME~\cite{progme}, and the hierarchical heavy-hitter algorithm
+of Jose \etal~\cite{jose2011online} solve a similar problem as
+ours. They estimate heavy hitters in traffic {\em online}, by iteratively
+``zooming in'' to the
+portions of traffic which are more likely to contain heavy flows. However, these
+algorithms involve the control plane in running their
+flow-space-partitioning algorithms, while \TheSystem works completely within the
+switch pipeline. Further, both prior approaches require temporal stability of
+the heavy-hitter flows to detect them over multiple intervals; \TheSystem
+determines heavy hitters using counters maintained in the same interval.
+
+%%- https://www.cise.ufl.edu/~sgchen/paper/sigmetrics2015.pdf
+%% frameworks/apps: opensketch
+%% packet mirroring: everflow, netsight
+%% other monitoring: latency/loss measurement. LDA, reference latency
+%%   interpolation, etc.
+%% other apps: flow size distribution? billing?
+%% other hash-based schemes? see survey of kirsch, varghese and mitzenmacher
+
+%% "Our approach efficiently allocates the available space to the heavy hitters by either evicting a large number of the small flows on a packet-by-packet basis or restricting them to a small subset of the entire table space. This proves to be a crucial advantage in estimating the heavy hitters more accurately when compared to other existing schemes"
+
+
+%% Group Testing - larger number of counters - many more tables as k increased - too much space to less important items - key recoverable
+%% Space-Saving is the most space-efficient way of maintaining information
+
+%% Really bad space-complexity they devote too much space to less imp items
+%% Or major background processing to be able to scan or clean or evict items once in a while - amortized O(1)
+%% We want something that is deterministically O(1)
+
+%% Candidates:
+%% - count-min: no keys here; only do top-k (no threshold)
+%% - count-min + reversible sketch -- [XXX: why is this inaccurate?]. decoding overhead
+%% - sample and hold: [XXX: inaccurate for the same amount of memory... but why?]
+%% --> can we use the bounds from these papers?
+%% - univmon?
+%% - flowradar?
+%% - other streaming heavy hitters algorithms (e.g., space savings) --> can't do on general purpose switch hardware
+%% - discuss the fact that space saving achieves the lower bound of O(k)

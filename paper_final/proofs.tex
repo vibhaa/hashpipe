@@ -1,0 +1,162 @@
+\documentclass[10pt]{article}
+
+\usepackage{hyperref}
+\usepackage{fullpage, graphicx, color, transparent, colortbl}
+\usepackage[usenames, dvipsnames]{xcolor}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+
+\newtheorem{theorem}{Theorem}[section]
+
+\def\compactify{\itemsep=0pt \topsep=0pt \partopsep=0pt \parsep=0pt}
+\let\latexusecounter=\usecounter
+\newenvironment{CompactItemize}
+  {\def\usecounter{\compactify\latexusecounter}
+   \begin{itemize}}
+  {\end{itemize}\let\usecounter=\latexusecounter}
+\newenvironment{CompactEnumerate}
+  {\def\usecounter{\compactify\latexusecounter}
+   \begin{enumerate}}
+  {\end{enumerate}\let\usecounter=\latexusecounter}
+
+\title{HashPipe Analysis}
+
+\begin{document}
+\maketitle
+
+\section{Setup}
+
+We can think of two conceptual models to analyze heavy-hitter detection
+algorithms: the aggregate model and the cash-register model. In the aggregate
+model, all packets of a flow arrive in one shot, while in the cash-register
+model, the packets of different flows can interleave. In both models, flows can
+arrive in any arbitrary order.
+
+The switch has $d$ stages, where the algorithm can probe $l$ locations in
+parallel at each stage. We desire to find the top $k$ heavy hitters using $m$
+memory overall, such that $m \geq k$ and $m \in O(k)$. Denote the set of the top
+$r$ items in the stream
+by $S_r$. We wish to determine the set $S_k$ at the end of processing all items.
+
+\section{Aggregate model with $d=1$ and $l=1$}
+
+\begin{theorem}
+  With probability $> 1/2$, an item $j \in S_{k/2}$ is in the data structure
+  after all items have been processed.
+\end{theorem}
+\begin{proof}
+  Consider an item $j \in S_{k/2}$ that hashes to location $i$. Regardless of
+  the order of the items, the probability $p$ that none of the heavier items
+  hashed to the same location $i$ is $(1 - 1/m)^r$, where $r$ is the number of
+  items heavier than $j$. Since $r \leq k/2$, $p \geq (1 - 1/m)^{k/2}$. If $m$ is
+  set to $k$, then $p \geq (1 - 1/k)^{k/2} \geq (1/e)^{1/2} > 1/2$.
+\end{proof}
+
+This bound can be strengthened either by increasing the amount of available
+memory per stage, e.g., by making $m \in O(k)$ instead of strictly $k$, or
+increasing the number of probes per stage $l$. We look at the latter (less
+obvious) case next.
+
+\section{Aggregate model with $d=1$ and $l>1$}
+
+The algorithm here is to look at $l$ locations in the table for each incoming
+flow. We evict the item with the minimum count among the $l$ items and the
+incoming item. Let the count associated with item $j$ be $val_j$. When item $i$
+is inserted, let $n_i$ denote the number of items in the data structure whose
+count is higher than $val_j$.
+
+The main challenge with the $l > 1$ case is that the order of item arrivals
+seems to matter in a nonobvious way: if more heavier items are in the data
+structure before item $j$ is inserted, $j$ may not be inserted. But if $j$ is
+inserted, it is more likely to stay in the data structure since there are fewer
+heavier items that may evict it in future.
+
+\begin{theorem}
+  \label{thm:staying-after-entering}
+  Given that item $j \in S_{k/2}$ enters the data structure, the chance that it
+  stays in the data structure after processing all items is $\geq e^{-1/2^l}$.
+\end{theorem}
+\begin{proof}
+  Suppose item $j$ is already in the data structure. For each item $i$ inserted
+  afterward, the probability that $i$ evicts $j$ is given by $(1/m) \cdot
+  (n_i/m)^{l-1}$, corresponding to $i$ hashing to the location of $j$, and also
+  independently hashing $l-1$ times to one of the $n_i$ locations with value
+  $\geq val_j$. Suppose there are $r$ items in the overall data stream with
+  value $\geq val_j$. Then the probability $p$ that item $j$ stays in the data
+  structure after being inserted is $(1 - (1/m) \cdot (n_i/m)^{l-1})^r \geq (1 -
+  (1/m) \cdot (n_i/m)^{l-1})^{k/2}$, since $r \leq k/2$.  We also have $m \geq
+  k$ and $n_i \leq k/2$. Then $p \geq (1 - (1/m) \cdot 1/2^{l-1})^{k/2} \geq
+  e^{-1/2^l}$.
+\end{proof}
+
+\begin{theorem}
+  \label{thm:entering-the-ds}
+  The probability that an item $j \in S_{k/2}$ is inserted into the data
+  structure is $\geq (1 - 1/2^l)$.
+\end{theorem}
+\begin{proof}
+Let $n_j$ denote the number of items with counts greater than $val_j$ at the
+time of inserting $j$. Then the only event when $j$ cannot get into the data
+structure is when all of its $l$ probed locations have counts higher than
+$val_j$. This happens with probability $(n_j/m)^l \leq 1/2^l$ since $n_j < k/2$
+and $m \geq k$. Hence, $j$ enters the data structure with probability $\geq 1 -
+1/2^l$.
+\end{proof}
+
+\begin{theorem}
+  \label{thm:aggregate-d1}
+  With probability $\geq (1 - 1/2^l) \cdot e^{-1/2^l}$, an item $j \in S_{k/2}$ is
+  in the data structure after all items have been processed.
+\end{theorem}
+\begin{proof}
+An item $j$ is in the data structure after processing all items if (i) it enters
+the data structure on arrival, and (ii) stays without being evicted after. By
+Bayes rule, this probability is $P(\mathrm{enters}) \cdot
+P(\mathrm{not\ evicted\ after\ entry})$, and we can complete the proof using
+theorems \ref{thm:staying-after-entering} and \ref{thm:entering-the-ds}.
+\end{proof}
+
+\section{Aggregate model with true minimum over $d > 1$ stages ($l=1$)}
+
+The algorithm here is to look at $l=1$ location in each stage upon inserting an
+item, and evict the minimum-valued item among the $d+1$ items. The memory $m$ is
+partitioned uniformly across the $d$ stages.
+
+\begin{theorem}
+  With probability $\geq d \cdot e^{-d/2}$, an item $j \in S_{k/2}$ is in the
+  data structure after all items have been processed.
+\end{theorem}
+
+\begin{proof}
+Let $A_i$ denote an indicator variable for the event that item $j \in S_{k/2}$
+is in table $i$ after processing all items. Then item $j$ is in the data
+structure if it is in any one of the $0, \ldots, d$ stages. Suppose $A$ is an
+indicator variable for the event that item $j$ is in one of the $d$ stages after
+processing all items. Since the algorithm ensures that an item is present in at
+most one stage, we have $A = A_1 + \cdots + A_d$.
+
+Any one stage has memory $k/d$. Consider a stage $i$ {\em in isolation}, i.e.,
+assuming it is the only table available to process the incoming items. The
+probability that item $j \in S_{k/2}$ is in table $i$ after all items have been
+processed is $\geq (1 - (1/m) \cdot (n_i/m)^{l-1})^{k/2} \geq (1 -
+1/(k/d))^{k/2} \geq e^{-d/2}$ since $l=1$ and the available memory is
+$k/d$.\footnote{From the most general expressions of theorems
+  \ref{thm:staying-after-entering} and \ref{thm:entering-the-ds}, this
+  probability should also be multiplied by $1 - (n_i/m)^l \geq 1 - (d/2)^l$,
+  which may be a negative number. This makes the result look weird; we should
+  check this.}
+
+Since the $A_i$'s and $A$ are indicator variables, their expectation is equal to
+the probability of the indicated event. Hence, $E[A_i]$ ({\em in isolation from
+  other stages}) is $\geq e^{-d/2}$. {\em Suppose we can use this value as the
+  expectation of $A_i$ more generally, despite the presence of other
+  stages}.\footnote{This claim must be proved.} Then, by linearity of
+expectation, we have $E[A] = E[A_1] + \cdots + E[A_d] \geq d \cdot
+e^{-d/2}$. This is the probability of the indicated event, i.e., item $j \in
+S_{k/2}$ is in one of the $d$ stages after all items are processed.
+
+\end{proof}
+
+\end{document}

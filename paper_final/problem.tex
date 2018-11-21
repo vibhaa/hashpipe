@@ -1,0 +1,70 @@
+\section{Background on Heavy-Hitter Detection}
+\subsection{Problem Formulation}
+\label{sec:problem}
+
+\NewPara{Heavy hitters.} ``Heavy hitters'' can refer to all flows that are
+larger (in number of packets or bytes) than a fraction $t$ of the total packets
+seen on the link (the ``threshold-$t$'' problem). Alternatively, the heavy
+hitters can be the top $k$ flows by size (the ``top-$k$''
+problem). Through the rest of this paper, we use the ``top-$k$'' definition. %The two problems are nearly interchangeable, where a reasonable
+%threshold $t$ can be used to identify the $k$ largest flows, and vice versa.
+
+\NewPara{Flow granularity.} Flows can be defined at various levels of
+granularity, such as IP address (\ie host), transport port
+number (i.e., application), or five-tuple (\ie transport connection). With a
+finer-grained notion of flows, the size and number of keys grows, requiring more
+bits to represent the key and more entries in the data structure to track 
+the heavy flows accurately.
+
+\NewPara{Accuracy.} A technique for detecting heavy hitters may have false
+positives (\ie reporting a non-heavy flow as heavy), false negatives (\ie not
+reporting a heavy flow), or an error in estimating the sizes of heavy flows.
+The impact of errors depends on the application.  For example, if the switch
+performs load balancing in the data plane, a few false negatives may be
+acceptable, especially if those heavy flows can be detected in the next time
+interval.  As another example, if the network treats heavy flows as suspected
+denial-of-service attacks, false positives could lead to unnecessary alarms that
+overwhelm network operators. When comparing approaches in our evaluations, we
+consider all three metrics.
+%% and penalize approaches with a very high rate of either false positives or
+%% false negatives.
+
+\NewPara{Overhead.} The overhead on the switch includes the total amount of
+memory for the data structure, the number of matching stages used in the switch
+pipeline (constrained by a switch-specific maximum, say 16~\cite{RMT}). The
+algorithms are constrained by the nature and amount of memory access and
+computation per match stage (\eg computing hash functions). On high-speed links,
+the number of active five-tuple flows per minute can easily be in the tens of
+thousands, if not more. Our central goal is to maintain data-plane state that is proportional to the target number $k$ of heavy hitters (\eg $5k$ or
+$10k$), rather than the number of active flows. In addition, we would like
+to use as few pipeline stages as possible, since the switch also needs to
+support other functionality related to packet forwarding and access control.
+
+%Given a single switch $s$, and a total of $n$ active flows as observed at this switch within a given time interval $[t_k, t_{k+1}]$, we wish to identify the heavy hitters. This could refer to all those flows which are larger than a threshold size or the top $k$ flows, by size, for a given $k$. For convenience sake, lets refer to the former as "heavy hitters by threshold" and the larger as "top-k". By \textbf{size} of a particular flow, we refer to the number of packets belonging to that flow that are observed at this switch $s$. The threshold is a certain (predetermined) fraction of the total number of packets across all the active flows. This threshold could also be translated into an appropriate $k$ value is if the problem is phrased as reporting the top $k$ flows at this switch, if one has some knowledge of what the relative distribution of the flow sizes are.  
+
+%In essence, given the input $n$ flows (each identified by a unique identifier) that between them refer to all the packets arriving at the switch $s$ during the time interval$[t_k, t_{k+1}]$, we are interested in the set $A$ where $A$ represents either the heavy hitters by threshold or the top k.
+% should we just use one of them?
+
+%\begin{framed}
+%\textbf{Input:} Set $F = \{f_1, f_2, \dots, f_n\}$ and a threshold $\phi$ or a number $k$ \\
+%\textbf{Output (Heavy hitters by threshold):} Set $A$ s.t. $A \subset F$ and
+%$$ for \  all \  a \in A, \  Size(a) \geq \displaystyle \phi \sum_{f \in F} Size(f) $$
+%textbf{Output (Top-K):} Set $A$ s.t. $A \subset F$ and $\vert A \vert = k$ and $$ for \  all \  a \in A, \  Size(a) \geq \displaystyle Size(f) \ for \  all \ f \in F - A  $$
+%\end{framed}
+
+%In the context of this problem, flows can be defined at different levels of granularity. They could group packets based on just the source or destination ip address, or based on port if one is interested in the applications producing most traffic or by the 5-tuple. Regardless, of how granular the flow is defined, the number of active flows is typically extremely large (of the order of "blank") %fill
+%and maintaining per-flow data is not scalable given the constraints of the hardware. This means that any proposed approach can maintain information for only a subset of all the flows. Yet, the number and complexity of the operations should be feasible at line-rate in the dataplane without significant overheads. In addition, the amount and frequency of information sent to the controller should also be reasonable % expand this further, give numbers.%
+%and majority of this information should be available right in the dataplane for applications that might want to use it without going through the controller. Further, our goal is for the algorithm to be implementable on commodity switches without needing custom hardware optimized for the purposes of this particular measurement problem. This involves ensuring that packets are only fed forward, traverse each table stages once without recirculation or stalling and perform a constant number of reads/writes in each stage.
+
+%Our goal in terms of accuracy for the approach and what we might consider good enough is highly dependent on the application that is using the information on the heavy hitters. For example, if we want to perform load balancing in the dataplane, missing a few heavy hitters might not be too bad especially if we re-randomize the hash functions in the next interval and they continue to be heavy hitters in the next interval. However, in this context, if we report a large number of false positives at the cost of not missing any true heavy hitters, it could cause an explosion of state to maintain load balancing information for the large number of flows that aren't actually heavy hitters. Similarly, if the goal is fraud and/or anomaly detection, a few false positives or negatives might not be too bad if we could get more information in the next time interval and correlate it with the current information to make it more accurate. However, a large number of either could be terrible either in terms of missing anomalies or causing significant overhead and unnecessarily flagging "rightful" flows. Hence, when comparing approaches, we prefer those with a very small percentage of false positives or negatives, but penalize approaches with an extremely high rate of either even if it is at the cost of the other metric being 100\%.
+
+%\subsection{Hardware Model} - already in the intro
+% explain the 
+
+
+%The internal hardware within every switch that is exploited to perform any classification or counting based on packet fields is the \textbf{content addressable memory (CAM)} or high-speed memory within match-action tables. A match-action table determines what action should be executed when a packet matches a certain criteria.The CAM within each of these tables stores a tag or a field to search on and an associated value for each tag. This value can be a rule that specifies what action needs to be taken for a particular class in the case of a "match-action rule table" or could be a counter that needs to be incremented to track the packets belonging to that class. The existing values in the CAM are compared parallely until an exact match is found and it is this parallel comparison process that makes the CAM fast and ideal for high-speed packet processing. There could be a single match-action table or a series of tables one after the other within a particular switch that process a packet. .
+
+%With the advent of languages like P4 \cite{bosshart2014p4}, it has become easier to program how switches in the network process packets. The language provides an easier interface with lower level rules like OpenFlow \cite{mckeown2008openflow} that directly communicate with the network infrastructure and helps program the dataplane. It has also made it possible to make changes to these rules while packets are in transit and based on these packets themselves as opposed to going through the controller. The language is protocol independent and hence, is able to interface with a wide range of final targets/hardware making it easier to program all of them. In particular, the language lets you define individual table stages, the actions within them, the match rules for those actions and also supports read-modify-write operations for these rules/fields while the packet is in transit. These features are critical to building a key-value store with dynamic updates as the packet traverses the network that enables us to track flow information. Along with the language framework, there is also a reference swtich provided on which any of the programs created through this interface can be run.
+
+% \subsection{Related Work}
+

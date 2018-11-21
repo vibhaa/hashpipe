@@ -1,0 +1,386 @@
+\newif \ifdraft \drafttrue 
+%\documentclass[10pt,twocolumn]{confpaper}
+\documentclass[10pt,twocolumn,sigconf]{acmart}
+
+\newif \ifappendix \appendixfalse
+
+%\makeatletter \@input{texdirectives} \makeatother
+
+%%%%%%%%%%%%%%%%%%%%  INCLUDES  %%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{booktabs} % For formal tables
+
+% Copyright
+%\setcopyright{none}
+
+%\setcopyright{acmlicensed}
+%\setcopyright{rightsretained}
+%\setcopyright{usgov}
+%\setcopyright{usgovmixed}
+%\setcopyright{cagov}
+%\setcopyright{cagovmixed}
+
+
+%Conference
+\author{Vibhaalakshmi Sivaraman}
+\affiliation{
+	\institution{Princeton University}
+}
+
+\author{Srinivas Narayana}
+\affiliation{
+	\institution{MIT CSAIL}
+}
+
+\author{Ori Rottenstreich}
+\affiliation{
+	\institution{Princeton University}
+}
+
+\author{S. Muthukrishnan}
+\affiliation{
+	\institution{Rutgers University}
+}
+
+\author{Jennifer Rexford}
+\affiliation{
+	\institution{Princeton University}
+}
+
+% The default list of authors is too long for headers}
+\renewcommand{\shortauthors}{V. Sivaraman et al.}
+
+\copyrightyear{2017}
+%\setcopyright{acmcopyright}
+\acmConference[SOSR '17]{ACM Symposium on SDN Research}{April 3-4, 2017}{Santa Clara, CA} 
+\acmISBN{978-1-4503-4947-5/17/04}
+\acmPrice{\$15.00}
+\acmDOI{http://dx.doi.org/10.1145/3050220.3050239}
+
+\usepackage[normalem]{ulem}
+\usepackage{amsmath, amssymb}
+\usepackage{fullpage}
+\usepackage{framed}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+%\usepackage{algorithm2e}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage{caption}
+\usepackage{wrapfig}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
+\usepackage{lipsum}
+\usepackage[titletoc]{appendix}
+\usepackage{hyperref} % http://ctan.org/pkg/hyperref
+\hypersetup{%
+  colorlinks = true,
+  linkcolor  = black
+}
+\usepackage{csquotes}
+\usepackage{xspace}
+\usepackage{ragged2e}
+\usepackage{fixltx2e}
+\usepackage{amsmath,amsthm,amsfonts}
+\usepackage{mdframed}
+\usepackage{stmaryrd}
+\usepackage{calc}
+\usepackage[makeroom]{cancel}
+\usepackage{algpseudocode}
+%\usepackage{algorithm}
+\ifappendix \usepackage[ruled,vlined]{algorithm2e} \fi
+\usepackage{makecell}
+\usepackage{lineno}
+\def\linenumberfont{\footnotesize}
+\usepackage{enumitem}
+\usepackage[justification=justified, font=small]{caption}
+\usepackage[export]{adjustbox}
+\usepackage{bm}
+\usepackage{amstext}
+\usepackage{tabularx}
+\usepackage{balance}
+\usepackage{authblk}
+\usepackage[export]{adjustbox}
+
+\usepackage{listings}
+\usepackage{color}
+
+\lstset{
+  columns=flexible,
+  mathescape,
+  keepspaces=true,
+  escapeinside={(*}{*)},
+  basicstyle=\ttfamily\small
+}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\graphicspath{ {figures/} }
+
+\makeatletter
+\renewcommand\AB@affilsepx{ , \protect\Affilfont}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%  LOCALS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlist[enumerate,1]{%
+  label=\arabic*.,
+}
+
+\newlist{inlinelist}{enumerate*}{1}
+\setlist*[inlinelist,1]{%
+  label=(\roman*),
+}
+
+\newcommand{\system}{{\em NetASM}}
+\newcommand{\lang}{SNAP\xspace}
+\newcommand{\Lang}{SNAP\xspace}
+\newcommand{\xFDD}{xFDD\xspace}
+\newcommand{\xFDDs}{xFDDs\xspace}
+\newcommand{\Tunnel}[1][footnotesize]{\code[#1]{DNS-tunnel-detect}\xspace}
+\newcommand{\tsub}{\textsubscript}
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\sequence}[1]{<#1>}
+\newcommand*{\Ucup}{\bigcup}
+\newcommand{\fddl}{\sqsubset}
+\newcommand{\atomic}{\mathsf{atomic}}
+\newcommand{\snaptitle}[1]{\noindent {\bf #1}}
+
+\newcommand{\eval}{\mathsf{eval}}
+\newcommand{\evale}{\mathsf{eval}_e}
+\renewcommand{\merge}{\mathsf{merge}}
+\newcommand{\elog}{\mathsf{E}}
+\newcommand{\Let}[3]{\text{let } {#1} ~=~ {#2} \text{in } {#3}}
+\newcommand{\IfElse}[3]{\text{if } #1 \text{ then } #2 \text{ else } #3}
+\newcommand{\ty}{\mathsf{ty}}
+\renewcommand{\-}{\ensuremath{\vdash}}
+\renewcommand{\=}{\ensuremath{\models}}
+\newcommand{\uni}{\mathsf{unicast}}
+\newcommand{\multi}{\mathsf{multicast}}
+\newcommand{\LA}{anlys}
+\newcommand{\PLA}{\LA\tsub{p}}
+\newcommand{\Nodes}{\mathsf{Nodes}}
+\newcommand{\Switches}{\mathsf{Switches}}
+\newcommand{\Edge}{\mathsf{Edge}}
+\newcommand{\StVar}{\mathsf{StateVars}}
+
+\newcommand{\ignore}[1]{}
+\newcommand{\TODO}[1]{\ifdraft {\color{red} \textbf{TODO:} {#1}} \fi }
+\newcommand{\jrex}[1]{\ifdraft {\color{orange} \textbf{JR:} {#1}} \fi }
+
+\newcommand{\ngs}[1]{{\color{red} \textbf{Srinivas:} {#1}}}
+\newcommand{\vls}[1]{{\color{blue} \textbf{Vibhaa:} {#1}}}
+\newcommand{\eg}{{\em e.g., }}
+\newcommand{\etal}{{\em et al.}}
+\newcommand{\vs}{{\em vs. }}
+\newcommand{\ie}{{\em i.e., }}
+\newcommand{\Sec}[1]{\S\ref{#1}}
+\newcommand{\App}[1]{Appendix~\ref{#1}}
+\newcommand{\TheSystem}{HashPipe\xspace}
+\newcommand{\Baseline}{HashParallel\xspace}
+\newcommand{\spacesaving}{space saving\xspace}
+\newcommand{\SpaceSaving}{Space Saving\xspace}
+\newcommand{\Spacesaving}{Space saving\xspace}
+\newcommand{\NewPara}[1]{\noindent{\bf #1}}
+\newcommand{\Alg}[1]{Algorithm~\ref{algo:#1}}
+\newcommand{\Fig}[1]{Fig.~\ref{fig:#1}}
+
+%%%%% THE location for new commands %%%%
+
+\usepackage[hang,flushmargin]{footmisc} 
+\usepackage{textcomp}
+\newcommand{\cref}[1]{\textsection\ref{#1}}
+%\usepackage{cleveref}
+%\crefname{section}{\S}{\S\S}
+%\Crefname{section}{\S}{\S\S}
+
+\newsavebox\CBox
+\newcommand\hcancel[2][0.5pt]{%
+	\ifmmode\sbox\CBox{$#2$}\else\sbox\CBox{#2}\fi%
+	\makebox[0pt][l]{\usebox\CBox}%  
+	\rule[0.5\ht\CBox-#1/2]{\wd\CBox}{#1}}
+%%%%%%%%%%%%%%%%%%%%  LANGUAGE COMMANDS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[2][footnotesize]{\begin{#1}\texttt{#2}\end{#1}}
+\newcommand{\match}[2]{#1 = #2}
+\newcommand{\modify}[2]{#1 <- #2}
+
+\newcommand{\union}[2]{#1+#2}
+\newcommand{\seq}[2]{#1;#2}
+\newcommand{\inters}[2]{#1 \& #2}
+\newcommand{\id}{id}
+\newcommand{\drop}{drop}
+\newcommand{\pstar}[1]{#1\textsuperscript{*}}
+\newcommand{\ifelse}[3]{if #1 then #2 else #3}
+\newcommand{\boldifelse}[3]{\textbf{if} #1 \textbf{then} #2 \textbf{else} #3}
+\newcommand{\negate}[1]{$\sim$#1}
+\newcommand{\pp}{\text{\code{++}}}
+\newcommand{\mm}{\text{\code{-{}-}}}
+
+\newcommand{\Expr}{\mathsf{Expr}}
+\newcommand{\Pol}{\mathsf{Pol}}
+\newcommand{\Pred}{\mathsf{Pred}}
+\newcommand{\Packet}{\mathsf{Packet}}
+\newcommand{\Log}{\mathsf{Log}}
+\newcommand{\St}{\mathsf{St}}
+\newcommand{\Store}{\mathsf{Store}}
+\newcommand{\Val}{\mathsf{Val}}
+\newcommand{\consistent}{\mathsf{consistent}}
+\newcommand{\harpoon}{\overset{\rightharpoonup}}
+
+\newcommand{\stgraph}{\textproc{st-dep}}
+\newcommand{\R}{\textproc{r}}
+\newcommand{\W}{\textproc{w}}
+%%%%%%%%%%%%%%%%%%%%  HIGHLIGHTING % %%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\highlighttext}[2][yellow]{{\setlength{\fboxsep}{0pt}\colorbox{#1}{#2}}}
+
+\newcommand{\highlight}[2][yellow]{\mathchoice%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\displaystyle#2$}}}%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\textstyle#2$}}}%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\scriptstyle#2$}}}%
+  {{\setlength{\fboxsep}{0pt}\colorbox{#1}{$\scriptscriptstyle#2$}}}}
+
+%%%%%%%%%%%%%%%%%%%%%  SPACING % %%%%%%%%%%%%%%%%%%%%%%%
+\setlength{\abovecaptionskip}{0.5mm}
+\setlength{\belowcaptionskip}{-2mm}
+%%%%%%%%%%%%%%%%%%%%  TITLE/AUTHORS  %%%%%%%%%%%%%%%%%%%%%
+
+%\date{}
+%\title{\ttlfnt{Smoking Out the Heavy-Hitter Flows with HashPipe}}
+
+%\author{
+%Paper \# \ "paper num",  
+%\pageref{lastpage} pages
+%\aufnt{\AUTHORS} \\
+%\affaddr{Affiliation}
+%}
+
+
+%%%%%%%%%%%%%%%%%%%%  START OF DOCUMENT  %%%%%%%%%%%%%%%%%
+\begin{document}
+%%\title{Smoking Out the Heavy-Hitter Flows with HashPipe}
+\title{Heavy-Hitter Detection Entirely in the Data Plane}
+\thispagestyle{empty}
+
+%\author{Ben Trovato}
+%\authornote{Dr.~Trovato insisted his name be first.}
+%\orcid{1234-5678-9012}
+%\affiliation{%
+%  \institution{Institute for Clarity in Documentation}
+%  \streetaddress{P.O. Box 1212}
+%  \city{Dublin} 
+%  \state{Ohio} 
+%  \postcode{43017-6221}
+%}
+
+
+
+%\email{trovato@corporation.com}
+%\author[1]{Vibhaalakshmi Sivaraman}
+%\author[2]{Srinivas Narayana}
+%\author[1]{Ori Rottenstreich}
+%\author[3]{\\S. Muthukrishnan}
+%\author[1]{Jennifer Rexford}
+%\affil[1]{Princeton University}
+%\affil[2]{MIT CSAIL}
+%\affil[3]{Rutgers University}
+%\setcounter{Maxaffil}{0}
+%\renewcommand\Affilfont{\small}
+
+\input{abstract}
+
+% \begin{CCSXML}e
+% <ccs2012>
+% <concept>
+% <concept_id>10003033.10003068</concept_id>
+% <concept_desc>Networks~Network algorithms</concept_desc>
+% <concept_significance>500</concept_significance>
+% </concept>
+% <concept>
+% <concept_id>10003033.10003099.10003105</concept_id>
+% <concept_desc>Networks~Network monitoring</concept_desc>
+% <concept_significance>500</concept_significance>
+% </concept>
+% <concept>
+% <concept_id>10003033.10003099.10003102</concept_id>
+% <concept_desc>Networks~Programmable networks</concept_desc>
+% <concept_significance>300</concept_significance>
+% </concept>
+% </ccs2012>
+% \end{CCSXML}
+
+%ccsdesc[500]{Networks~Network algorithms}
+%ccsdesc[500]{Networks~Network monitoring}
+%ccsdesc[300]{Networks~Programmable networks}
+
+
+\keywords{Software-Defined Networks; Network Monitoring; Programmable Networks; Network Algorithms} %e filled
+
+\maketitle
+
+
+%\AcmCopyright
+%\ToAppear
+%\begin{sloppypar}
+
+%\ifthenelse{\equal{\onlyAbstract}{no}}{% !onlyAbstract
+
+
+\input{introduction}
+\input{problem}
+\input{related}
+\input{algorithm}
+\input{prototype}
+\input{evaluation}
+\input{other-related}
+%%\input{discussion}
+\input{conclusion}
+\label{lastpage}
+
+%\begin{appendices}
+%\input{analysis}
+%\end{appendices}
+
+%\end{sloppypar}
+
+%\vspace{-0.1in}
+%\section*{Acknowledgments}
+% Comments for people we need to acknowledge in the final version.
+\begin{acks}
+  We thank the anonymous SOSR reviewers, Anirudh Sivaraman, and Bharath
+  Balasubramanian for their feedback.  This
+  work was supported partly by NSF grant CCF-1535948, DARPA grant
+  HR0011-15-2-0047 and gifts from
+  Intel and Huawei. We also thank the industrial members of the MIT Center for
+  Wireless Networks and Mobile Computing (Wireless@MIT) for their support.
+
+\end{acks}
+
+%\pagebreak
+
+\clearpage
+%\setlength{\bibsep}{0pt}
+\setlength{\parskip}{-1pt}
+\setlength{\itemsep}{-1pt}
+ \footnotesize % SPACE
+
+\bibliographystyle{abbrv}
+\begin{small}
+\bibliography{paper}
+\end{small}
+%\bibliographystyle{abbrvnat_noaddr} % SPACE
+%\theendnotes % ENDNOTES
+
+%}
+{% onlyAbstract
+}
+
+\ifappendix
+\clearpage
+\appendix
+\input{appendix}
+\fi
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%  END OF DOCUMENT  %%%%%%%%%%%%%%%%%%%%

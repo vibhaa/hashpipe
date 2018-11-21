@@ -1,0 +1,23 @@
+\begin{abstract}
+
+% doing this entirely in the dataplane
+Identifying the ``heavy hitter'' flows or flows with large traffic volumes in
+the data plane is important for several applications \emph{e.g.,} flow-size
+aware routing, DoS detection, and traffic engineering.
+%Understanding which  traffic flows consume the most bandwidth is useful for load
+%balancing, detecting DoS attacks, and traffic engineering. Identifying these
+%``heavy hitter'' flows in the data plane enables applications that distinguish
+%between packets belonging to heavy and light flows at packet-processing time,
+%\emph{e.g.,}
+%to route heavy flows or DoS traffic differently. 
+However, measurement in the data plane is constrained by the need for line-rate processing (at 10-100Gb/s) and
+limited memory in switching hardware. We propose HashPipe, a heavy hitter detection algorithm using emerging programmable data planes.
+HashPipe implements a pipeline of hash tables which retain counters for heavy
+flows in the tables while evicting lighter flows over time.
+We prototype HashPipe in P4 and
+evaluate it with packet traces from an ISP backbone link and a data center. On
+the ISP trace, we
+find that
+HashPipe identifies 95\% of the 300 heaviest flows with less than 80KB of memory
+on a trace that contains 400,000 flows.
+\end{abstract}
